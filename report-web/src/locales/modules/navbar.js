@@ -1,0 +1,21 @@
+export default {
+  themeMode: 'Mode tema',
+  layoutSize: 'Ukuran layout',
+  notifications: 'Notifikasi',
+  profile: 'Profil',
+  layoutSettings: 'Pengaturan layout',
+  lockScreen: 'Kunci layar',
+  logout: 'Keluar',
+  logoutConfirm: 'Yakin ingin keluar dari sistem?',
+  lang: 'Bahasa',
+  noticeTitle: 'Notifikasi & Pengumuman',
+  markAllRead: 'Tandai semua dibaca',
+  noNotice: 'Tidak ada pengumuman',
+  noticeTypeNotify: 'Notifikasi',
+  noticeTypeAnnounce: 'Pengumuman',
+  noticeDetail: 'Detail Pengumuman',
+  noContent: 'Tidak ada konten',
+  statusNormal: 'Normal',
+  statusClosed: 'Ditutup',
+  message: 'Pesan'
+}

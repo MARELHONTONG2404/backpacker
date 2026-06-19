@@ -1,0 +1,31 @@
+# Dependencies & build output
+**/node_modules/
+**/target/
+**/dist/
+**/.gradle/
+**/build/
+
+# Logs & local env
+**/*.log
+.env
+.env.*
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flutter / Dart
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+
+# Upload paths & secrets
+**/uploadPath/

@@ -1,0 +1,21 @@
+export default {
+  themeMode: '主题模式',
+  layoutSize: '布局大小',
+  notifications: '消息通知',
+  profile: '个人中心',
+  layoutSettings: '布局设置',
+  lockScreen: '锁定屏幕',
+  logout: '退出登录',
+  logoutConfirm: '确定注销并退出系统吗？',
+  lang: '语言',
+  noticeTitle: '通知与公告',
+  markAllRead: '全部标为已读',
+  noNotice: '暂无公告',
+  noticeTypeNotify: '通知',
+  noticeTypeAnnounce: '公告',
+  noticeDetail: '公告详情',
+  noContent: '暂无内容',
+  statusNormal: '正常',
+  statusClosed: '关闭',
+  message: '消息'
+}

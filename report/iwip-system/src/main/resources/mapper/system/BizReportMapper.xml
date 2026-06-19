@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iwip.system.mapper.BizReportMapper">
+
+    <resultMap type="BizReport" id="BizReportResult">
+        <id     property="reportId"    column="report_id"    />
+        <result property="reportNo"    column="report_no"    />
+        <result property="title"       column="title"        />
+        <result property="reportType"  column="report_type"  />
+        <result property="status"      column="status"       />
+        <result property="content"     column="content"      />
+        <result property="userId"      column="user_id"      />
+        <result property="deptId"      column="dept_id"      />
+        <result property="delFlag"     column="del_flag"     />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"  column="create_time"  />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"  column="update_time"  />
+        <result property="remark"      column="remark"       />
+        <result property="nickName"    column="nick_name"    />
+        <result property="deptName"    column="dept_name"    />
+    </resultMap>
+
+    <sql id="selectBizReportVo">
+        select r.report_id, r.report_no, r.title, r.report_type, r.status, r.content,
+               r.user_id, r.dept_id, r.del_flag, r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
+               u.nick_name, d.dept_name
+        from biz_report r
+        left join sys_user u on r.user_id = u.user_id
+        left join sys_dept d on r.dept_id = d.dept_id
+    </sql>
+
+    <select id="selectBizReportList" parameterType="BizReport" resultMap="BizReportResult">
+        <include refid="selectBizReportVo"/>
+        <where>
+            r.del_flag = '0'
+            <if test="title != null and title != ''">
+                AND r.title like concat('%', #{title}, '%')
+            </if>
+            <if test="reportType != null and reportType != ''">
+                AND r.report_type = #{reportType}
+            </if>
+            <if test="status != null and status != ''">
+                AND r.status = #{status}
+            </if>
+            <if test="reportNo != null and reportNo != ''">
+                AND r.report_no like concat('%', #{reportNo}, '%')
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                AND date_format(r.create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                AND date_format(r.create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
+        </where>
+        order by r.create_time desc
+    </select>
+
+    <select id="selectBizReportById" parameterType="Long" resultMap="BizReportResult">
+        <include refid="selectBizReportVo"/>
+        where r.report_id = #{reportId} and r.del_flag = '0'
+    </select>
+
+    <insert id="insertBizReport" parameterType="BizReport" useGeneratedKeys="true" keyProperty="reportId">
+        insert into biz_report (
+            report_no, title, report_type, status, content, user_id, dept_id,
+            del_flag, create_by, create_time, remark
+        ) values (
+            #{reportNo}, #{title}, #{reportType}, #{status}, #{content}, #{userId}, #{deptId},
+            '0', #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateBizReport" parameterType="BizReport">
+        update biz_report
+        <set>
+            <if test="title != null and title != ''">title = #{title},</if>
+            <if test="reportType != null and reportType != ''">report_type = #{reportType},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_by = #{updateBy},
+            update_time = sysdate()
+        </set>
+        where report_id = #{reportId}
+    </update>
+
+    <update id="deleteBizReportByIds" parameterType="Long">
+        update biz_report set del_flag = '2' where report_id in
+        <foreach collection="array" item="reportId" open="(" separator="," close=")">
+            #{reportId}
+        </foreach>
+    </update>
+
+    <select id="countAll" resultType="int">
+        select count(*) from biz_report where del_flag = '0'
+    </select>
+
+    <select id="countByStatus" resultType="int">
+        select count(*) from biz_report where del_flag = '0' and status = #{status}
+    </select>
+
+    <select id="countThisMonth" resultType="int">
+        select count(*) from biz_report
+        where del_flag = '0'
+          and date_format(create_time, '%Y%m') = date_format(sysdate(), '%Y%m')
+    </select>
+
+    <select id="countGroupByStatus" resultType="java.util.HashMap">
+        select status as name, count(*) as value
+        from biz_report where del_flag = '0'
+        group by status
+    </select>
+
+    <select id="countGroupByMonth" resultType="java.util.HashMap">
+        select date_format(create_time, '%Y-%m') as month, count(*) as count
+        from biz_report
+        where del_flag = '0'
+          and create_time &gt;= date_sub(sysdate(), interval #{months} month)
+        group by date_format(create_time, '%Y-%m')
+        order by month
+    </select>
+
+</mapper>
