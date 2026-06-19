@@ -89,12 +89,14 @@ const loginForm = ref({
 const loginRules = computed(() => ({
   username: [{ required: true, trigger: "blur", message: t('login.usernameRequired') }],
   password: [{ required: true, trigger: "blur", message: t('login.passwordRequired') }],
-  code: [{ required: true, trigger: "change", message: t('login.captchaRequired') }]
+  code: captchaEnabled.value
+    ? [{ required: true, trigger: "change", message: t('login.captchaRequired') }]
+    : []
 }))
 
 const codeUrl = ref("")
 const loading = ref(false)
-const captchaEnabled = ref(true)
+const captchaEnabled = ref(false)
 const register = ref(false)
 const redirect = ref(undefined)
 
@@ -141,6 +143,9 @@ function getCode() {
       codeUrl.value = "data:image/gif;base64," + res.img
       loginForm.value.uuid = res.uuid
     }
+  }).catch(() => {
+    codeUrl.value = ""
+    proxy.$modal.msgError(t('login.captchaLoadFailed'))
   })
 }
 
