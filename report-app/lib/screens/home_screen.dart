@@ -335,7 +335,8 @@ class _CreateOrderTabState extends State<_CreateOrderTab> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _category,
+              key: ValueKey(_category),
+              initialValue: _category,
               decoration: const InputDecoration(labelText: 'Kategori', border: OutlineInputBorder()),
               items: const [
                 DropdownMenuItem(value: 'general', child: Text('Umum')),
