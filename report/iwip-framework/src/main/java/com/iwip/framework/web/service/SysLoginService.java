@@ -64,6 +64,19 @@ public class SysLoginService
     {
         // 验证码校验
         validateCaptcha(username, code, uuid);
+        return authenticate(username, password);
+    }
+
+    /**
+     * Login tanpa captcha (Backpacker mobile).
+     */
+    public String loginWithoutCaptcha(String username, String password)
+    {
+        return authenticate(username, password);
+    }
+
+    private String authenticate(String username, String password)
+    {
         // 登录前置校验
         loginPreCheck(username, password);
         // 用户验证

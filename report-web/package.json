@@ -46,5 +46,8 @@
   },
   "resolutions": {
     "quill": "2.0.2"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.62.0"
   }
 }

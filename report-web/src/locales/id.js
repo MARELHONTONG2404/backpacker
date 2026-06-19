@@ -12,6 +12,7 @@ import pages from './modules/pages'
 import components from './modules/components'
 import crontab from './modules/crontab'
 import tool from './modules/tool'
+import backpacker from './modules/backpacker'
 
 export default {
   common,
@@ -27,5 +28,6 @@ export default {
   pages,
   components,
   crontab,
-  tool
+  tool,
+  backpacker
 }

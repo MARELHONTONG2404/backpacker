@@ -4,9 +4,9 @@ import { list as listOnline } from '@/api/monitor/online'
 import { listNoticeTop } from '@/api/system/notice'
 import { list as listLogininfor } from '@/api/monitor/logininfor'
 import { getServer } from '@/api/monitor/server'
-import { getReportStats } from '@/api/report/report'
+import { getOrderStats } from '@/api/backpacker/order'
 
-/** Ambil semua data dashboard dari API yang sudah ada */
+/** Ambil semua data dashboard Backpacker */
 export function fetchDashboardData() {
   return Promise.all([
     listUser({ pageNum: 1, pageSize: 1 }),
@@ -14,6 +14,6 @@ export function fetchDashboardData() {
     listNoticeTop(),
     listLogininfor({ pageNum: 1, pageSize: 100 }),
     getServer().catch(() => null),
-    getReportStats().catch(() => null)
+    getOrderStats().catch(() => null)
   ])
 }

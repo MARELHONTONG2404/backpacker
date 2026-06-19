@@ -3,6 +3,7 @@
 report-web/node_modules/
 **/target/
 **/dist/
+**/.vite/
 **/.gradle/
 **/build/
 

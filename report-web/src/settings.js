@@ -62,6 +62,6 @@ export default {
   /**
    * 底部版权文本内容
    */
-  footerContent: 'Copyright © 2026 IWIP. All Rights Reserved.'
+  footerContent: 'Copyright © 2026 Backpacker. All Rights Reserved.'
 }
 

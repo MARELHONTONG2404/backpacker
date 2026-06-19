@@ -12,6 +12,7 @@ import pages from './zh-cn-modules/pages'
 import components from './zh-cn-modules/components'
 import crontab from './zh-cn-modules/crontab'
 import tool from './zh-cn-modules/tool'
+import backpacker from './zh-cn-modules/backpacker'
 
 export default {
   common,
@@ -27,5 +28,6 @@ export default {
   pages,
   components,
   crontab,
-  tool
+  tool,
+  backpacker
 }
