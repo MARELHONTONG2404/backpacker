@@ -2,7 +2,10 @@ package com.iwip.system.service.impl;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +56,22 @@ public class BizOrderServiceImpl implements IBizOrderService
     public List<BizOrder> selectBizOrderList(BizOrder order)
     {
         return bizOrderMapper.selectBizOrderList(order);
+    }
+
+    @Override
+    public Map<String, Object> selectOrderStats()
+    {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total", bizOrderMapper.countAllOrders());
+        stats.put("published", bizOrderMapper.countOrdersByStatus(BizOrder.STATUS_PUBLISHED));
+        stats.put("active", bizOrderMapper.countOrdersByStatus(BizOrder.STATUS_TAKEN)
+                + bizOrderMapper.countOrdersByStatus(BizOrder.STATUS_IN_PROGRESS));
+        stats.put("completed", bizOrderMapper.countOrdersByStatus(BizOrder.STATUS_COMPLETED));
+        stats.put("cancelled", bizOrderMapper.countOrdersByStatus(BizOrder.STATUS_CANCELLED));
+        stats.put("thisMonth", bizOrderMapper.countOrdersThisMonth());
+        stats.put("statusChart", bizOrderMapper.countOrdersGroupByStatus());
+        stats.put("monthlyChart", buildMonthlyChart(bizOrderMapper.countOrdersGroupByMonth(6)));
+        return stats;
     }
 
     @Override
@@ -252,5 +271,31 @@ public class BizOrderServiceImpl implements IBizOrderService
     {
         String datePart = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         return "ORD-" + datePart + "-" + String.format("%04d", System.currentTimeMillis() % 10000);
+    }
+
+    private List<Map<String, Object>> buildMonthlyChart(List<Map<String, Object>> dbRows)
+    {
+        Map<String, Long> countMap = new HashMap<>();
+        for (Map<String, Object> row : dbRows)
+        {
+            Object month = row.get("month");
+            Object count = row.get("count");
+            if (month != null && count != null)
+            {
+                countMap.put(month.toString(), Long.parseLong(count.toString()));
+            }
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        LocalDate now = LocalDate.now();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM");
+        for (int i = 5; i >= 0; i--)
+        {
+            String month = now.minusMonths(i).format(fmt);
+            Map<String, Object> item = new HashMap<>();
+            item.put("month", month);
+            item.put("count", countMap.getOrDefault(month, 0L));
+            result.add(item);
+        }
+        return result;
     }
 }

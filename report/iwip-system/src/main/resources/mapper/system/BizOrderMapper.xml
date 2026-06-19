@@ -106,6 +106,35 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by o.create_time desc
     </select>
 
+    <select id="countAllOrders" resultType="int">
+        select count(*) from biz_order where del_flag = '0'
+    </select>
+
+    <select id="countOrdersByStatus" resultType="int">
+        select count(*) from biz_order where del_flag = '0' and status = #{status}
+    </select>
+
+    <select id="countOrdersThisMonth" resultType="int">
+        select count(*) from biz_order
+        where del_flag = '0'
+          and date_format(create_time, '%Y%m') = date_format(sysdate(), '%Y%m')
+    </select>
+
+    <select id="countOrdersGroupByStatus" resultType="java.util.HashMap">
+        select status as name, count(*) as value
+        from biz_order where del_flag = '0'
+        group by status
+    </select>
+
+    <select id="countOrdersGroupByMonth" resultType="java.util.HashMap">
+        select date_format(create_time, '%Y-%m') as month, count(*) as count
+        from biz_order
+        where del_flag = '0'
+          and create_time &gt;= date_sub(sysdate(), interval #{months} month)
+        group by date_format(create_time, '%Y-%m')
+        order by month
+    </select>
+
     <insert id="insertBizOrder" parameterType="BizOrder" useGeneratedKeys="true" keyProperty="orderId">
         insert into biz_order (
             order_no, title, description, category, reward_amount, location_text,

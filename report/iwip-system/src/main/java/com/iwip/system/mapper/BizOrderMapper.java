@@ -17,6 +17,16 @@ public interface BizOrderMapper
 
     List<BizOrder> selectBizOrderList(BizOrder order);
 
+    int countAllOrders();
+
+    int countOrdersByStatus(String status);
+
+    int countOrdersThisMonth();
+
+    List<java.util.Map<String, Object>> countOrdersGroupByStatus();
+
+    List<java.util.Map<String, Object>> countOrdersGroupByMonth(int months);
+
     int insertBizOrder(BizOrder order);
 
     int publishBizOrder(BizOrder order);

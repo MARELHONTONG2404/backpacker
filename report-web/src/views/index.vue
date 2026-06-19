@@ -29,10 +29,10 @@
       </el-col>
     </el-row>
 
-    <!-- Statistik laporan -->
-    <div class="section-title">{{ t('dashboard.sectionReport') }}</div>
+    <!-- Statistik pesanan -->
+    <div class="section-title">{{ t('dashboard.sectionOrder') }}</div>
     <el-row :gutter="16" class="section-row">
-      <el-col v-for="item in reportStatCards" :key="item.key" :xs="12" :sm="8" :md="4">
+      <el-col v-for="item in orderStatCards" :key="item.key" :xs="12" :sm="8" :md="4">
         <el-card shadow="hover" class="stat-card report-stat" :body-style="{ padding: '18px' }">
           <div class="stat-icon" :style="{ background: item.bg }">
             <el-icon :size="20"><component :is="item.icon" /></el-icon>
@@ -69,22 +69,22 @@
       </el-col>
     </el-row>
 
-    <!-- Grafik laporan -->
+    <!-- Grafik pesanan -->
     <el-row :gutter="16" class="section-row">
       <el-col :xs="24" :lg="8">
         <el-card shadow="never">
           <template #header>
-            <div class="card-header"><span>{{ t('dashboard.reportStatusChart') }}</span></div>
+            <div class="card-header"><span>{{ t('dashboard.orderStatusChart') }}</span></div>
           </template>
-          <div ref="reportStatusChartRef" class="chart-box chart-box-sm" v-loading="loading" />
+          <div ref="orderStatusChartRef" class="chart-box chart-box-sm" v-loading="loading" />
         </el-card>
       </el-col>
       <el-col :xs="24" :lg="16">
         <el-card shadow="never">
           <template #header>
-            <div class="card-header"><span>{{ t('dashboard.reportMonthChart') }}</span></div>
+            <div class="card-header"><span>{{ t('dashboard.orderMonthChart') }}</span></div>
           </template>
-          <div ref="reportMonthChartRef" class="chart-box chart-box-sm" v-loading="loading" />
+          <div ref="orderMonthChartRef" class="chart-box chart-box-sm" v-loading="loading" />
         </el-card>
       </el-col>
     </el-row>
@@ -199,29 +199,31 @@ const loginTodayCount = ref(0)
 const notices = ref([])
 const recentLogins = ref([])
 const serverInfo = ref(null)
-const reportStats = ref({
+const orderStats = ref({
   total: 0,
-  draft: 0,
-  submitted: 0,
-  approved: 0,
-  rejected: 0,
+  published: 0,
+  active: 0,
+  completed: 0,
+  cancelled: 0,
   thisMonth: 0
 })
 
 const loginChartRef = ref(null)
 const memoryChartRef = ref(null)
-const reportStatusChartRef = ref(null)
-const reportMonthChartRef = ref(null)
+const orderStatusChartRef = ref(null)
+const orderMonthChartRef = ref(null)
 let loginChart = null
 let memoryChart = null
-let reportStatusChart = null
-let reportMonthChart = null
+let orderStatusChart = null
+let orderMonthChart = null
 
 const STATUS_LABELS = computed(() => ({
-  '0': t('dashboard.statusDraft'),
-  '1': t('dashboard.statusSubmitted'),
-  '2': t('dashboard.statusApproved'),
-  '3': t('dashboard.statusRejected')
+  DRAFT: t('dashboard.statusDraft'),
+  PUBLISHED: t('dashboard.statusPublished'),
+  TAKEN: t('dashboard.statusTaken'),
+  IN_PROGRESS: t('dashboard.statusInProgress'),
+  COMPLETED: t('dashboard.statusCompleted'),
+  CANCELLED: t('dashboard.statusCancelled')
 }))
 
 const noticeVisible = ref(false)
@@ -241,16 +243,16 @@ const statCards = computed(() => [
   { key: 'login', label: t('dashboard.loginToday'), value: loginTodayCount.value, icon: Key, bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }
 ])
 
-const reportStatCards = computed(() => [
-  { key: 'rtotal', label: t('dashboard.totalReport'), value: reportStats.value.total, icon: Files, bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  { key: 'rsubmitted', label: t('dashboard.pendingReview'), value: reportStats.value.submitted, icon: Clock, bg: 'linear-gradient(135deg, #f7971e 0%, #ffd200 100%)' },
-  { key: 'rapproved', label: t('dashboard.approved'), value: reportStats.value.approved, icon: CircleCheck, bg: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' },
-  { key: 'rrejected', label: t('dashboard.rejected'), value: reportStats.value.rejected, icon: Warning, bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-  { key: 'rmonth', label: t('dashboard.thisMonth'), value: reportStats.value.thisMonth, icon: Document, bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }
+const orderStatCards = computed(() => [
+  { key: 'ototal', label: t('dashboard.totalOrder'), value: orderStats.value.total, icon: Files, bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  { key: 'opublished', label: t('dashboard.published'), value: orderStats.value.published, icon: Clock, bg: 'linear-gradient(135deg, #f7971e 0%, #ffd200 100%)' },
+  { key: 'oactive', label: t('dashboard.active'), value: orderStats.value.active, icon: Document, bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+  { key: 'ocompleted', label: t('dashboard.completed'), value: orderStats.value.completed, icon: CircleCheck, bg: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' },
+  { key: 'omonth', label: t('dashboard.thisMonth'), value: orderStats.value.thisMonth, icon: Warning, bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }
 ])
 
 const quickLinks = computed(() => [
-  { label: t('dashboard.quickReport'), path: '/report/list', icon: Files },
+  { label: t('dashboard.quickOrders'), path: '/backpacker/order', icon: Files },
   { label: t('dashboard.quickUser'), path: '/system/user', icon: User },
   { label: t('dashboard.quickRole'), path: '/system/role', icon: UserFilled },
   { label: t('dashboard.quickNotice'), path: '/system/notice', icon: Bell },
@@ -360,8 +362,8 @@ function initMemoryChart(server) {
   })
 }
 
-function initReportStatusChart(statusRows) {
-  if (!reportStatusChartRef.value) return
+function initOrderStatusChart(statusRows) {
+  if (!orderStatusChartRef.value) return
   const labels = STATUS_LABELS.value
   const data = (statusRows || []).map(row => ({
     name: labels[row.name] || row.name,
@@ -370,11 +372,11 @@ function initReportStatusChart(statusRows) {
   if (!data.length) {
     data.push({ name: t('dashboard.noChartData'), value: 0 })
   }
-  reportStatusChart = echarts.init(reportStatusChartRef.value)
-  reportStatusChart.setOption({
+  orderStatusChart = echarts.init(orderStatusChartRef.value)
+  orderStatusChart.setOption({
     tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
     legend: { bottom: 0, left: 'center' },
-    color: ['#909399', '#E6A23C', '#67C23A', '#F56C6C'],
+    color: ['#909399', '#409EFF', '#E6A23C', '#67C23A', '#F56C6C', '#b88230'],
     series: [{
       type: 'pie',
       radius: ['40%', '65%'],
@@ -385,18 +387,18 @@ function initReportStatusChart(statusRows) {
   })
 }
 
-function initReportMonthChart(monthlyRows) {
-  if (!reportMonthChartRef.value) return
+function initOrderMonthChart(monthlyRows) {
+  if (!orderMonthChartRef.value) return
   const months = (monthlyRows || []).map(r => r.month)
   const counts = (monthlyRows || []).map(r => Number(r.count) || 0)
-  reportMonthChart = echarts.init(reportMonthChartRef.value)
-  reportMonthChart.setOption({
+  orderMonthChart = echarts.init(orderMonthChartRef.value)
+  orderMonthChart.setOption({
     tooltip: { trigger: 'axis' },
     grid: { left: '3%', right: '4%', bottom: '3%', top: '12%', containLabel: true },
     xAxis: { type: 'category', data: months },
     yAxis: { type: 'value', minInterval: 1 },
     series: [{
-      name: t('dashboard.reportLabel'),
+      name: t('dashboard.orderLabel'),
       type: 'bar',
       barWidth: '45%',
       data: counts,
@@ -414,28 +416,28 @@ function initReportMonthChart(monthlyRows) {
 function handleResize() {
   loginChart?.resize()
   memoryChart?.resize()
-  reportStatusChart?.resize()
-  reportMonthChart?.resize()
+  orderStatusChart?.resize()
+  orderMonthChart?.resize()
 }
 
 async function loadDashboard() {
   loading.value = true
   try {
-    const [userRes, onlineRes, noticeRes, loginRes, serverRes, reportRes] = await fetchDashboardData()
+    const [userRes, onlineRes, noticeRes, loginRes, serverRes, orderRes] = await fetchDashboardData()
 
     userCount.value = userRes.total ?? 0
     onlineCount.value = onlineRes.total ?? 0
     notices.value = noticeRes.data ?? noticeRes.rows ?? []
     unreadCount.value = noticeRes.unreadCount ?? 0
 
-    if (reportRes?.data) {
-      reportStats.value = {
-        total: reportRes.data.total ?? 0,
-        draft: reportRes.data.draft ?? 0,
-        submitted: reportRes.data.submitted ?? 0,
-        approved: reportRes.data.approved ?? 0,
-        rejected: reportRes.data.rejected ?? 0,
-        thisMonth: reportRes.data.thisMonth ?? 0
+    if (orderRes?.data) {
+      orderStats.value = {
+        total: orderRes.data.total ?? 0,
+        published: orderRes.data.published ?? 0,
+        active: orderRes.data.active ?? 0,
+        completed: orderRes.data.completed ?? 0,
+        cancelled: orderRes.data.cancelled ?? 0,
+        thisMonth: orderRes.data.thisMonth ?? 0
       }
     }
 
@@ -448,8 +450,8 @@ async function loadDashboard() {
     const trend = buildLoginTrend(logs)
     initLoginChart(trend.days, trend.counts)
     initMemoryChart(serverInfo.value)
-    initReportStatusChart(reportRes?.data?.statusChart)
-    initReportMonthChart(reportRes?.data?.monthlyChart)
+    initOrderStatusChart(orderRes?.data?.statusChart)
+    initOrderMonthChart(orderRes?.data?.monthlyChart)
   } catch (e) {
     console.error(e)
     proxy.$modal.msgError(t('common.loadFailed'))
@@ -467,8 +469,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
   loginChart?.dispose()
   memoryChart?.dispose()
-  reportStatusChart?.dispose()
-  reportMonthChart?.dispose()
+  orderStatusChart?.dispose()
+  orderMonthChart?.dispose()
 })
 </script>
 

@@ -1,5 +1,5 @@
 export default {
-  title: 'Sistem Manajemen IWIP',
+  title: 'Backpacker Admin',
   username: 'Akun',
   password: 'Kata sandi',
   captcha: 'Kode verifikasi',

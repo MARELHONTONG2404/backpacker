@@ -1,6 +1,7 @@
 package com.iwip.system.service;
 
 import java.util.List;
+import java.util.Map;
 import com.iwip.system.domain.BizOrder;
 
 /**
@@ -15,6 +16,8 @@ public interface IBizOrderService
     List<BizOrder> selectMyOrderList(BizOrder order, Long userId, String scope);
 
     List<BizOrder> selectBizOrderList(BizOrder order);
+
+    Map<String, Object> selectOrderStats();
 
     BizOrder createOrder(BizOrder order, Long creatorId, String username);
 

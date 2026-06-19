@@ -32,6 +32,13 @@ public class BizOrderAdminController extends BaseController
         return getDataTable(list);
     }
 
+    @PreAuthorize("@ss.hasPermi('backpacker:order:list')")
+    @GetMapping("/stats")
+    public AjaxResult stats()
+    {
+        return success(bizOrderService.selectOrderStats());
+    }
+
     @PreAuthorize("@ss.hasPermi('backpacker:order:query')")
     @GetMapping("/{orderId}")
     public AjaxResult getInfo(@PathVariable Long orderId)

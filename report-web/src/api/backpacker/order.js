@@ -14,3 +14,10 @@ export function getOrder(orderId) {
     method: 'get'
   })
 }
+
+export function getOrderStats() {
+  return request({
+    url: '/backpacker/order/stats',
+    method: 'get'
+  })
+}

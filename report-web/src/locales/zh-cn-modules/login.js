@@ -1,5 +1,5 @@
 export default {
-  title: '管理系统',
+  title: 'Backpacker Admin',
   username: '账号',
   password: '密码',
   captcha: '验证码',
