@@ -80,8 +80,13 @@ class ApiService {
     if (token == null || token.isEmpty) {
       throw ApiException('Token login tidak ditemukan');
     }
+    final userId = data['userId'] as int?;
+    if (userId == null) {
+      throw ApiException('Data user tidak ditemukan');
+    }
     await _storage.saveSession(
       token: token,
+      userId: userId,
       username: data['username'] as String? ?? username,
       nickName: data['nickName'] as String? ?? username,
     );
@@ -137,6 +142,16 @@ class ApiService {
       return takeOrderAction(created.orderId, 'publish');
     }
     return created;
+  }
+
+  Future<OrderItem> fetchOrderDetail(int orderId) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/backpacker/orders/$orderId'),
+      headers: await _headers(auth: true),
+    );
+    final data = _decodeBody(response);
+    _ensureSuccess(data);
+    return OrderItem.fromJson(data['data'] as Map<String, dynamic>);
   }
 
   Future<OrderItem> takeOrderAction(int orderId, String action, {String? cancelReason}) async {
