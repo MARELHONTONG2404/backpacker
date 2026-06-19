@@ -1,5 +1,6 @@
 # Dependencies & build output
 **/node_modules/
+report-web/node_modules/
 **/target/
 **/dist/
 **/.gradle/
