@@ -48,6 +48,64 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where o.order_id = #{orderId} and o.del_flag = '0'
     </select>
 
+    <select id="selectAvailableOrderList" parameterType="BizOrder" resultMap="BizOrderResult">
+        <include refid="selectBizOrderVo"/>
+        <where>
+            o.del_flag = '0'
+            and o.status = 'PUBLISHED'
+            <if test="category != null and category != ''">
+                and o.category = #{category}
+            </if>
+            <if test="title != null and title != ''">
+                and o.title like concat('%', #{title}, '%')
+            </if>
+            <if test="params.excludeCreatorId != null">
+                and o.creator_id != #{params.excludeCreatorId}
+            </if>
+        </where>
+        order by o.published_at desc
+    </select>
+
+    <select id="selectMyOrderList" parameterType="BizOrder" resultMap="BizOrderResult">
+        <include refid="selectBizOrderVo"/>
+        <where>
+            o.del_flag = '0'
+            <if test="status != null and status != ''">
+                and o.status = #{status}
+            </if>
+            <if test="params.scope != null and params.scope == 'created'">
+                and o.creator_id = #{params.userId}
+            </if>
+            <if test="params.scope != null and params.scope == 'executing'">
+                and o.executor_id = #{params.userId}
+            </if>
+            <if test="params.scope != null and params.scope == 'all'">
+                and (o.creator_id = #{params.userId} or o.executor_id = #{params.userId})
+            </if>
+        </where>
+        order by o.update_time desc, o.create_time desc
+    </select>
+
+    <select id="selectBizOrderList" parameterType="BizOrder" resultMap="BizOrderResult">
+        <include refid="selectBizOrderVo"/>
+        <where>
+            o.del_flag = '0'
+            <if test="orderNo != null and orderNo != ''">
+                and o.order_no like concat('%', #{orderNo}, '%')
+            </if>
+            <if test="title != null and title != ''">
+                and o.title like concat('%', #{title}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                and o.status = #{status}
+            </if>
+            <if test="category != null and category != ''">
+                and o.category = #{category}
+            </if>
+        </where>
+        order by o.create_time desc
+    </select>
+
     <insert id="insertBizOrder" parameterType="BizOrder" useGeneratedKeys="true" keyProperty="orderId">
         insert into biz_order (
             order_no, title, description, category, reward_amount, location_text,
@@ -68,6 +126,59 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where order_id = #{orderId}
           and creator_id = #{creatorId}
           and status = 'DRAFT'
+          and del_flag = '0'
+    </update>
+
+    <update id="takeBizOrder" parameterType="BizOrder">
+        update biz_order
+        set status = #{status},
+            executor_id = #{executorId},
+            taken_at = sysdate(),
+            version = version + 1,
+            update_by = #{updateBy},
+            update_time = sysdate()
+        where order_id = #{orderId}
+          and status = 'PUBLISHED'
+          and del_flag = '0'
+    </update>
+
+    <update id="startBizOrder" parameterType="BizOrder">
+        update biz_order
+        set status = #{status},
+            started_at = sysdate(),
+            version = version + 1,
+            update_by = #{updateBy},
+            update_time = sysdate()
+        where order_id = #{orderId}
+          and executor_id = #{executorId}
+          and status = 'TAKEN'
+          and del_flag = '0'
+    </update>
+
+    <update id="completeBizOrder" parameterType="BizOrder">
+        update biz_order
+        set status = #{status},
+            completed_at = sysdate(),
+            version = version + 1,
+            update_by = #{updateBy},
+            update_time = sysdate()
+        where order_id = #{orderId}
+          and executor_id = #{executorId}
+          and status = 'IN_PROGRESS'
+          and del_flag = '0'
+    </update>
+
+    <update id="cancelBizOrder" parameterType="BizOrder">
+        update biz_order
+        set status = #{status},
+            cancelled_at = sysdate(),
+            cancel_reason = #{cancelReason},
+            version = version + 1,
+            update_by = #{updateBy},
+            update_time = sysdate()
+        where order_id = #{orderId}
+          and creator_id = #{creatorId}
+          and status in ('DRAFT', 'PUBLISHED')
           and del_flag = '0'
     </update>
 
