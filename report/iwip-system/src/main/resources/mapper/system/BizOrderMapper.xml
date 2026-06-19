@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iwip.system.mapper.BizOrderMapper">
+
+    <resultMap type="BizOrder" id="BizOrderResult">
+        <id     property="orderId"       column="order_id"       />
+        <result property="orderNo"       column="order_no"       />
+        <result property="title"         column="title"          />
+        <result property="description"   column="description"    />
+        <result property="category"      column="category"       />
+        <result property="rewardAmount"  column="reward_amount"  />
+        <result property="locationText"  column="location_text"  />
+        <result property="creatorId"     column="creator_id"     />
+        <result property="executorId"    column="executor_id"    />
+        <result property="status"        column="status"         />
+        <result property="version"       column="version"        />
+        <result property="publishedAt"   column="published_at"   />
+        <result property="takenAt"       column="taken_at"       />
+        <result property="startedAt"     column="started_at"     />
+        <result property="completedAt"   column="completed_at"   />
+        <result property="cancelledAt"   column="cancelled_at"   />
+        <result property="cancelReason"  column="cancel_reason"  />
+        <result property="delFlag"       column="del_flag"       />
+        <result property="createBy"      column="create_by"      />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"      column="update_by"      />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"        column="remark"         />
+        <result property="creatorName"   column="creator_name"   />
+        <result property="executorName"  column="executor_name"  />
+    </resultMap>
+
+    <sql id="selectBizOrderVo">
+        select o.order_id, o.order_no, o.title, o.description, o.category, o.reward_amount,
+               o.location_text, o.creator_id, o.executor_id, o.status, o.version,
+               o.published_at, o.taken_at, o.started_at, o.completed_at, o.cancelled_at,
+               o.cancel_reason, o.del_flag, o.create_by, o.create_time, o.update_by, o.update_time, o.remark,
+               c.nick_name as creator_name, e.nick_name as executor_name
+        from biz_order o
+        left join sys_user c on o.creator_id = c.user_id
+        left join sys_user e on o.executor_id = e.user_id
+    </sql>
+
+    <select id="selectBizOrderById" parameterType="Long" resultMap="BizOrderResult">
+        <include refid="selectBizOrderVo"/>
+        where o.order_id = #{orderId} and o.del_flag = '0'
+    </select>
+
+    <insert id="insertBizOrder" parameterType="BizOrder" useGeneratedKeys="true" keyProperty="orderId">
+        insert into biz_order (
+            order_no, title, description, category, reward_amount, location_text,
+            creator_id, status, version, del_flag, create_by, create_time, remark
+        ) values (
+            #{orderNo}, #{title}, #{description}, #{category}, #{rewardAmount}, #{locationText},
+            #{creatorId}, #{status}, #{version}, '0', #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="publishBizOrder" parameterType="BizOrder">
+        update biz_order
+        set status = #{status},
+            published_at = sysdate(),
+            version = version + 1,
+            update_by = #{updateBy},
+            update_time = sysdate()
+        where order_id = #{orderId}
+          and creator_id = #{creatorId}
+          and status = 'DRAFT'
+          and del_flag = '0'
+    </update>
+
+    <insert id="insertBizOrderLog" parameterType="BizOrderLog" useGeneratedKeys="true" keyProperty="logId">
+        insert into biz_order_log (
+            order_id, from_status, to_status, operator_id, operator_type, remark, create_time
+        ) values (
+            #{orderId}, #{fromStatus}, #{toStatus}, #{operatorId}, #{operatorType}, #{remark}, sysdate()
+        )
+    </insert>
+
+</mapper>
