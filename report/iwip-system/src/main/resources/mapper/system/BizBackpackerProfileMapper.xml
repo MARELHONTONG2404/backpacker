@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iwip.system.mapper.BizBackpackerProfileMapper">
+
+    <resultMap type="BizBackpackerProfile" id="ProfileResult">
+        <id     property="userId"           column="user_id"           />
+        <result property="copperCoins"      column="copper_coins"      />
+        <result property="reputationScore"  column="reputation_score"  />
+        <result property="lastCheckinDate"  column="last_checkin_date" />
+        <result property="completedTasks"   column="completed_tasks"   />
+        <result property="failedTasks"      column="failed_tasks"      />
+        <result property="createTime"       column="create_time"       />
+        <result property="updateTime"       column="update_time"       />
+    </resultMap>
+
+    <resultMap type="BizCoinTransaction" id="TransactionResult">
+        <id     property="transactionId" column="transaction_id" />
+        <result property="userId"        column="user_id"        />
+        <result property="amount"        column="amount"         />
+        <result property="balanceAfter"  column="balance_after"  />
+        <result property="txType"        column="tx_type"        />
+        <result property="refId"         column="ref_id"         />
+        <result property="remark"        column="remark"         />
+        <result property="createTime"    column="create_time"    />
+    </resultMap>
+
+    <select id="selectProfileByUserId" parameterType="Long" resultMap="ProfileResult">
+        select user_id, copper_coins, reputation_score, last_checkin_date,
+               completed_tasks, failed_tasks, create_time, update_time
+        from biz_backpacker_profile
+        where user_id = #{userId}
+    </select>
+
+    <insert id="insertProfile" parameterType="BizBackpackerProfile">
+        insert into biz_backpacker_profile (
+            user_id, copper_coins, reputation_score, last_checkin_date,
+            completed_tasks, failed_tasks, create_time, update_time
+        ) values (
+            #{userId}, #{copperCoins}, #{reputationScore}, #{lastCheckinDate},
+            #{completedTasks}, #{failedTasks}, #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <update id="addCoins">
+        update biz_backpacker_profile
+        set copper_coins = copper_coins + #{amount},
+            update_time = sysdate()
+        where user_id = #{userId}
+    </update>
+
+    <update id="deductCoins">
+        update biz_backpacker_profile
+        set copper_coins = copper_coins - #{amount},
+            update_time = sysdate()
+        where user_id = #{userId}
+          and copper_coins >= #{amount}
+    </update>
+
+    <update id="updateLastCheckinDate">
+        update biz_backpacker_profile
+        set last_checkin_date = #{checkinDate},
+            update_time = sysdate()
+        where user_id = #{userId}
+    </update>
+
+    <insert id="insertCoinTransaction" parameterType="BizCoinTransaction" useGeneratedKeys="true" keyProperty="transactionId">
+        insert into biz_coin_transaction (
+            user_id, amount, balance_after, tx_type, ref_id, remark, create_time
+        ) values (
+            #{userId}, #{amount}, #{balanceAfter}, #{txType}, #{refId}, #{remark}, #{createTime}
+        )
+    </insert>
+
+    <select id="selectRecentTransactions" resultMap="TransactionResult">
+        select transaction_id, user_id, amount, balance_after, tx_type, ref_id, remark, create_time
+        from biz_coin_transaction
+        where user_id = #{userId}
+        order by create_time desc
+        limit #{limit}
+    </select>
+
+</mapper>
