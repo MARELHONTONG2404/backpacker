@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../config/app_strings.dart';
+import '../models/backpacker_profile.dart';
 import '../models/order.dart';
 import '../services/api_service.dart';
 import '../services/auth_storage.dart';
+import '../theme/app_theme.dart';
+import '../widgets/common_widgets.dart';
 import '../widgets/order_action_handler.dart';
+import '../widgets/order_card.dart';
 import 'login_screen.dart';
 import 'order_detail_screen.dart';
 
@@ -21,6 +26,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _tabIndex = 0;
   String? _nickName;
   int? _userId;
+  BackpackerProfile? _coinProfile;
+  bool _checkinLoading = false;
 
   @override
   void initState() {
@@ -31,11 +38,44 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadProfile() async {
     final nickName = await _storage.getNickName();
     final userId = await _storage.getUserId();
-    if (mounted) {
-      setState(() {
-        _nickName = nickName;
-        _userId = userId;
-      });
+    try {
+      final coins = await widget.api.fetchCoinProfile();
+      if (mounted) {
+        setState(() {
+          _nickName = nickName;
+          _userId = userId;
+          _coinProfile = coins;
+        });
+      }
+    } on ApiException catch (error) {
+      if (mounted) {
+        setState(() {
+          _nickName = nickName;
+          _userId = userId;
+        });
+        showAppMessage(context, error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _nickName = nickName;
+          _userId = userId;
+        });
+      }
+    }
+  }
+
+  Future<void> _checkin() async {
+    if (_coinProfile != null && !_coinProfile!.canCheckinToday) return;
+    setState(() => _checkinLoading = true);
+    try {
+      await widget.api.dailyCheckin();
+      await _loadProfile();
+      if (mounted) showAppMessage(context, 'Check-in berhasil! +${_coinProfile?.dailyCheckinReward ?? 2} koin');
+    } on ApiException catch (error) {
+      if (mounted) showAppMessage(context, error.message);
+    } finally {
+      if (mounted) setState(() => _checkinLoading = false);
     }
   }
 
@@ -59,30 +99,102 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  String get _tabTitle {
+    switch (_tabIndex) {
+      case 0:
+        return 'Tugas Tersedia';
+      case 1:
+        return 'Pesanan Saya';
+      default:
+        return 'Buat Tugas';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Backpacker${_nickName == null ? '' : ' · $_nickName'}'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_tabTitle),
+            if (_nickName != null)
+              Text(
+                AppStrings.welcomeHello.replaceFirst('{name}', _nickName!),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+          ],
+        ),
         actions: [
-          IconButton(onPressed: _logout, icon: const Icon(Icons.logout), tooltip: 'Keluar'),
+          if (_coinProfile != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Chip(
+                avatar: const Icon(Icons.monetization_on_outlined, size: 18, color: AppColors.primary),
+                label: Text('${_coinProfile!.copperCoins}'),
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          IconButton(
+            onPressed: (_coinProfile?.canCheckinToday ?? false) && !_checkinLoading ? _checkin : null,
+            icon: _checkinLoading
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : Icon(
+                    Icons.calendar_today_outlined,
+                    color: (_coinProfile?.canCheckinToday ?? false) ? AppColors.primary : AppColors.textSecondary,
+                  ),
+            tooltip: (_coinProfile?.canCheckinToday ?? false) ? AppStrings.checkin : AppStrings.checkinDone,
+          ),
+          IconButton(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout_rounded),
+            tooltip: 'Keluar',
+          ),
         ],
       ),
       body: IndexedStack(
         index: _tabIndex,
         children: [
           _AvailableTab(api: widget.api, userId: _userId, onTapOrder: _openDetail),
-          _MyOrdersTab(api: widget.api, userId: _userId, onTapOrder: _openDetail),
-          _CreateOrderTab(api: widget.api, onCreated: () => setState(() => _tabIndex = 1)),
+          _MyOrdersTab(
+            api: widget.api,
+            userId: _userId,
+            onTapOrder: _openDetail,
+            onCoinsChanged: _loadProfile,
+          ),
+          _CreateOrderTab(
+            api: widget.api,
+            coinProfile: _coinProfile,
+            onCreated: () {
+              _loadProfile();
+              setState(() => _tabIndex = 1);
+            },
+          ),
         ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tabIndex,
+        height: 68,
         onDestinationSelected: (index) => setState(() => _tabIndex = index),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.explore), label: 'Tersedia'),
-          NavigationDestination(icon: Icon(Icons.list_alt), label: 'Pesanan Saya'),
-          NavigationDestination(icon: Icon(Icons.add_circle_outline), label: 'Buat Tugas'),
+          NavigationDestination(
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore),
+            label: AppStrings.tabAvailable,
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.inventory_2_outlined),
+            selectedIcon: Icon(Icons.inventory_2),
+            label: AppStrings.tabMine,
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.add_circle_outline),
+            selectedIcon: Icon(Icons.add_circle),
+            label: AppStrings.tabCreate,
+          ),
         ],
       ),
     );
@@ -116,38 +228,33 @@ class _AvailableTabState extends State<_AvailableTab> {
       final orders = await widget.api.fetchAvailableOrders();
       if (mounted) setState(() => _orders = orders);
     } on ApiException catch (error) {
-      _showError(error.message);
+      if (mounted) showAppMessage(context, error.message);
     } catch (_) {
-      _showError('Gagal memuat tugas tersedia');
+      if (mounted) showAppMessage(context, 'Gagal memuat tugas tersedia');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingView(message: 'Memuat tugas tersedia...');
     }
     return RefreshIndicator(
       onRefresh: _load,
       child: _orders.isEmpty
-          ? ListView(
-              children: const [
-                SizedBox(height: 120),
-                Center(child: Text('Belum ada tugas tersedia')),
-              ],
+          ? const EmptyState(
+              icon: Icons.search_off_outlined,
+              title: 'Belum ada tugas tersedia',
+              subtitle: 'Tarik ke bawah untuk refresh atau buat tugas baru.',
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               itemCount: _orders.length,
               itemBuilder: (context, index) {
                 final order = _orders[index];
-                return _OrderCard(
+                return OrderCard(
                   order: order,
                   onTap: () => widget.onTapOrder(order),
                   trailing: OrderActionButtons(
@@ -166,11 +273,17 @@ class _AvailableTabState extends State<_AvailableTab> {
 }
 
 class _MyOrdersTab extends StatefulWidget {
-  const _MyOrdersTab({required this.api, required this.userId, required this.onTapOrder});
+  const _MyOrdersTab({
+    required this.api,
+    required this.userId,
+    required this.onTapOrder,
+    required this.onCoinsChanged,
+  });
 
   final ApiService api;
   final int? userId;
   final ValueChanged<OrderItem> onTapOrder;
+  final VoidCallback onCoinsChanged;
 
   @override
   State<_MyOrdersTab> createState() => _MyOrdersTabState();
@@ -193,14 +306,10 @@ class _MyOrdersTabState extends State<_MyOrdersTab> {
       final orders = await widget.api.fetchMyOrders(scope: _scope);
       if (mounted) setState(() => _orders = orders);
     } on ApiException catch (error) {
-      _showError(error.message);
+      if (mounted) showAppMessage(context, error.message);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -209,7 +318,7 @@ class _MyOrdersTabState extends State<_MyOrdersTab> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: SegmentedButton<String>(
             segments: const [
               ButtonSegment(value: 'all', label: Text('Semua')),
@@ -225,22 +334,21 @@ class _MyOrdersTabState extends State<_MyOrdersTab> {
         ),
         Expanded(
           child: _loading
-              ? const Center(child: CircularProgressIndicator())
+              ? const LoadingView(message: 'Memuat pesanan...')
               : RefreshIndicator(
                   onRefresh: _load,
                   child: _orders.isEmpty
-                      ? ListView(
-                          children: const [
-                            SizedBox(height: 120),
-                            Center(child: Text('Belum ada pesanan')),
-                          ],
+                      ? const EmptyState(
+                          icon: Icons.inbox_outlined,
+                          title: 'Belum ada pesanan',
+                          subtitle: 'Tugas yang Anda buat atau kerjakan akan muncul di sini.',
                         )
                       : ListView.builder(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(16),
                           itemCount: _orders.length,
                           itemBuilder: (context, index) {
                             final order = _orders[index];
-                            return _OrderCard(
+                            return OrderCard(
                               order: order,
                               roleLabel: order.roleLabel(widget.userId),
                               onTap: () => widget.onTapOrder(order),
@@ -248,7 +356,10 @@ class _MyOrdersTabState extends State<_MyOrdersTab> {
                                 order: order,
                                 api: widget.api,
                                 userId: widget.userId,
-                                onChanged: _load,
+                                onChanged: () {
+                                  _load();
+                                  widget.onCoinsChanged();
+                                },
                               ),
                             );
                           },
@@ -261,10 +372,15 @@ class _MyOrdersTabState extends State<_MyOrdersTab> {
 }
 
 class _CreateOrderTab extends StatefulWidget {
-  const _CreateOrderTab({required this.api, required this.onCreated});
+  const _CreateOrderTab({
+    required this.api,
+    required this.onCreated,
+    this.coinProfile,
+  });
 
   final ApiService api;
   final VoidCallback onCreated;
+  final BackpackerProfile? coinProfile;
 
   @override
   State<_CreateOrderTab> createState() => _CreateOrderTabState();
@@ -282,6 +398,10 @@ class _CreateOrderTabState extends State<_CreateOrderTab> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_publishNow && widget.coinProfile != null && !widget.coinProfile!.canAffordPublish) {
+      showAppMessage(context, AppStrings.publishInsufficient);
+      return;
+    }
     setState(() => _loading = true);
     try {
       await widget.api.createOrder(
@@ -297,23 +417,18 @@ class _CreateOrderTabState extends State<_CreateOrderTab> {
       _rewardController.clear();
       _locationController.clear();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_publishNow ? 'Tugas berhasil dibuat dan dipublikasikan' : 'Draft tugas berhasil disimpan'),
-        ),
+      showAppMessage(
+        context,
+        _publishNow ? 'Tugas berhasil dibuat dan dipublikasikan' : 'Draft tugas berhasil disimpan',
       );
       widget.onCreated();
     } on ApiException catch (error) {
-      _showError(error.message);
+      showAppMessage(context, error.message);
     } catch (_) {
-      _showError('Gagal membuat tugas');
+      showAppMessage(context, 'Gagal membuat tugas');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -333,132 +448,105 @@ class _CreateOrderTabState extends State<_CreateOrderTab> {
         key: _formKey,
         child: Column(
           children: [
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Judul tugas', border: OutlineInputBorder()),
-              validator: (value) => value == null || value.trim().isEmpty ? 'Wajib diisi' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _descriptionController,
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Deskripsi', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              key: ValueKey(_category),
-              initialValue: _category,
-              decoration: const InputDecoration(labelText: 'Kategori', border: OutlineInputBorder()),
-              items: const [
-                DropdownMenuItem(value: 'general', child: Text('Umum')),
-                DropdownMenuItem(value: 'delivery', child: Text('Antar Barang')),
-                DropdownMenuItem(value: 'helper', child: Text('Bantuan')),
-                DropdownMenuItem(value: 'tech', child: Text('Teknisi')),
-                DropdownMenuItem(value: 'errands', child: Text('Belanja / Errands')),
-              ],
-              onChanged: (value) => setState(() => _category = value ?? 'general'),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _rewardController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Imbalan (Rp)', border: OutlineInputBorder()),
-              validator: (value) => value == null || num.tryParse(value) == null ? 'Angka tidak valid' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _locationController,
-              decoration: const InputDecoration(labelText: 'Lokasi', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 12),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Langsung publikasikan'),
-              subtitle: const Text('Nonaktifkan untuk simpan sebagai draft dulu'),
-              value: _publishNow,
-              onChanged: _loading ? null : (value) => setState(() => _publishNow = value),
-            ),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: _loading ? null : _submit,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                child: _loading
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text(_publishNow ? 'Buat & Publish' : 'Simpan Draft'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OrderCard extends StatelessWidget {
-  const _OrderCard({
-    required this.order,
-    required this.onTap,
-    this.trailing,
-    this.roleLabel,
-  });
-
-  final OrderItem order;
-  final VoidCallback onTap;
-  final Widget? trailing;
-  final String? roleLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = statusColor(order.status);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+            SectionCard(
+              title: 'Informasi Tugas',
+              child: Column(
                 children: [
-                  Expanded(
-                    child: Text(order.title, style: Theme.of(context).textTheme.titleMedium),
+                  AppTextField(
+                    controller: _titleController,
+                    label: 'Judul tugas',
+                    prefixIcon: Icons.title,
+                    validator: (value) => value == null || value.trim().isEmpty ? 'Wajib diisi' : null,
                   ),
-                  Chip(
-                    label: Text(order.statusLabel, style: const TextStyle(color: Colors.white, fontSize: 12)),
-                    backgroundColor: color,
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
+                  const SizedBox(height: 14),
+                  AppTextField(
+                    controller: _descriptionController,
+                    label: 'Deskripsi',
+                    prefixIcon: Icons.notes,
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 14),
+                  DropdownButtonFormField<String>(
+                    key: ValueKey(_category),
+                    initialValue: _category,
+                    decoration: const InputDecoration(
+                      labelText: 'Kategori',
+                      prefixIcon: Icon(Icons.category_outlined),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'general', child: Text('Umum')),
+                      DropdownMenuItem(value: 'delivery', child: Text('Antar Barang')),
+                      DropdownMenuItem(value: 'helper', child: Text('Bantuan')),
+                      DropdownMenuItem(value: 'tech', child: Text('Teknisi')),
+                      DropdownMenuItem(value: 'errands', child: Text('Belanja / Errands')),
+                    ],
+                    onChanged: (value) => setState(() => _category = value ?? 'general'),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              Text('${order.categoryLabel} · Rp ${order.rewardAmount}'),
-              if (order.locationText != null && order.locationText!.isNotEmpty)
-                Text(order.locationText!, style: Theme.of(context).textTheme.bodySmall),
-              if (order.description != null && order.description!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(order.description!, maxLines: 2, overflow: TextOverflow.ellipsis),
-              ],
-              if (order.creatorName != null)
-                Text('Pembuat: ${order.creatorName}', style: Theme.of(context).textTheme.bodySmall),
-              if (order.executorName != null)
-                Text('Pelaksana: ${order.executorName}', style: Theme.of(context).textTheme.bodySmall),
-              if (roleLabel != null && roleLabel!.isNotEmpty)
-                Text(roleLabel!, style: Theme.of(context).textTheme.labelMedium),
-              if (trailing != null) ...[
-                const SizedBox(height: 12),
-                trailing!,
-              ],
-              const SizedBox(height: 4),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text('Ketuk untuk detail', style: Theme.of(context).textTheme.bodySmall),
+            ),
+            const SizedBox(height: 12),
+            SectionCard(
+              title: 'Detail Layanan',
+              child: Column(
+                children: [
+                  AppTextField(
+                    controller: _rewardController,
+                    label: 'Imbalan (Rp)',
+                    prefixIcon: Icons.payments_outlined,
+                    keyboardType: TextInputType.number,
+                    validator: (value) => value == null || num.tryParse(value) == null ? 'Angka tidak valid' : null,
+                  ),
+                  const SizedBox(height: 14),
+                  AppTextField(
+                    controller: _locationController,
+                    label: 'Lokasi',
+                    prefixIcon: Icons.location_on_outlined,
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 12),
+            SectionCard(
+              title: 'Publikasi',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (widget.coinProfile != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        AppStrings.publishFeeHint.replaceFirst('{fee}', '${widget.coinProfile!.publishFee}'),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: widget.coinProfile!.canAffordPublish
+                                  ? AppColors.textRegular
+                                  : Theme.of(context).colorScheme.error,
+                            ),
+                      ),
+                    ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Langsung publikasikan'),
+                    subtitle: const Text('Nonaktifkan untuk simpan sebagai draft dulu'),
+                    value: _publishNow,
+                    activeThumbColor: AppColors.primary,
+                    onChanged: _loading ? null : (value) => setState(() => _publishNow = value),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: _loading ? null : _submit,
+              child: _loading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(_publishNow ? 'Buat & Publish' : 'Simpan Draft'),
+            ),
+          ],
         ),
       ),
     );

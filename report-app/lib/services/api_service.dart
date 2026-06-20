@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
+import '../models/backpacker_profile.dart';
+import '../models/captcha.dart';
 import '../models/order.dart';
 import 'auth_storage.dart';
 
@@ -65,14 +67,36 @@ class ApiService {
     _ensureSuccess(_decodeBody(response));
   }
 
+  Future<CaptchaInfo> fetchCaptcha() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/captchaImage'),
+      headers: await _headers(),
+    );
+    final data = _decodeBody(response);
+    _ensureSuccess(data);
+    final enabled = data['captchaEnabled'] as bool? ?? true;
+    return CaptchaInfo(
+      enabled: enabled,
+      uuid: data['uuid'] as String?,
+      base64Image: data['img'] as String?,
+    );
+  }
+
   Future<void> login({
     required String username,
     required String password,
+    String? code,
+    String? uuid,
   }) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/backpacker/auth/login'),
       headers: await _headers(),
-      body: jsonEncode({'username': username, 'password': password}),
+      body: jsonEncode({
+        'username': username,
+        'password': password,
+        'code': code ?? '',
+        'uuid': uuid ?? '',
+      }),
     );
     final data = _decodeBody(response);
     _ensureSuccess(data);
@@ -93,6 +117,26 @@ class ApiService {
   }
 
   Future<void> logout() => _storage.clear();
+
+  Future<BackpackerProfile> fetchCoinProfile() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/backpacker/coins/profile'),
+      headers: await _headers(auth: true),
+    );
+    final data = _decodeBody(response);
+    _ensureSuccess(data);
+    return BackpackerProfile.fromJson(data);
+  }
+
+  Future<BackpackerProfile> dailyCheckin() async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/backpacker/coins/checkin'),
+      headers: await _headers(auth: true),
+    );
+    final data = _decodeBody(response);
+    _ensureSuccess(data);
+    return fetchCoinProfile();
+  }
 
   Future<List<OrderItem>> fetchAvailableOrders() async {
     final response = await http.get(

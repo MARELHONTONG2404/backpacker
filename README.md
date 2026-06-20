@@ -14,7 +14,7 @@
 ## Alur sistem
 
 ```text
-Mobile (Flutter)     →  /backpacker/auth/*, /backpacker/orders/*
+Mobile (Flutter)     →  /backpacker/auth/*, /backpacker/orders/*, /backpacker/coins/*
 Admin Web (Vue)      →  Dashboard + monitoring pesanan
 Backend              →  State machine pesanan (DRAFT → … → COMPLETED)
 Database             →  biz_order, sys_user, sys_role
@@ -29,6 +29,7 @@ mysql -u iwip -p iwip_manajemen < sql/20260417.sql
 mysql -u iwip -p iwip_manajemen < sql/biz_order.sql
 mysql -u iwip -p iwip_manajemen < sql/backpacker_auth.sql
 mysql -u iwip -p iwip_manajemen < sql/backpacker_unify.sql
+mysql -u iwip -p iwip_manajemen < sql/backpacker_coins.sql
 ```
 
 ## Menjalankan

@@ -130,7 +130,7 @@ class OrderItem {
 }
 
 enum OrderAction {
-  publish('publish', 'Publish', 'Publikasikan tugas ke marketplace?'),
+  publish('publish', 'Publish', 'Publikasikan tugas ke marketplace? Biaya: 5 koin tembaga.'),
   cancel('cancel', 'Batalkan', 'Batalkan pesanan ini?'),
   take('take', 'Ambil Tugas', 'Ambil tugas ini?'),
   start('start', 'Mulai Kerjakan', 'Mulai mengerjakan tugas?'),
