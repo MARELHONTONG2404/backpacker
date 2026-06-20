@@ -20,4 +20,14 @@ public interface IBackpackerCoinService
     List<BizCoinTransaction> getRecentTransactions(Long userId, int limit);
 
     boolean canAffordPublish(Long userId);
+
+    void rewardTaskCompletion(Long executorId, Long orderId);
+
+    void assertCanTakeTask(Long userId);
+
+    boolean canTakeTask(Long userId);
+
+    void applyRatingReputation(Long executorId, int score, Long orderId);
+
+    void penaltyTaskAbandoned(Long executorId, Long orderId);
 }

@@ -12,6 +12,7 @@ import com.iwip.common.exception.ServiceException;
 import com.iwip.common.utils.DateUtils;
 import com.iwip.system.domain.BizBackpackerProfile;
 import com.iwip.system.domain.BizCoinTransaction;
+import com.iwip.system.domain.BizReputationLog;
 import com.iwip.system.mapper.BizBackpackerProfileMapper;
 import com.iwip.system.service.IBackpackerCoinService;
 
@@ -112,6 +113,81 @@ public class BackpackerCoinServiceImpl implements IBackpackerCoinService
     {
         BizBackpackerProfile profile = getOrCreateProfile(userId);
         return profile.getCopperCoins() >= BackpackerConstants.PUBLISH_FEE_COINS;
+    }
+
+    @Override
+    @Transactional
+    public void rewardTaskCompletion(Long executorId, Long orderId)
+    {
+        getOrCreateProfile(executorId);
+        creditCoins(executorId, BackpackerConstants.TASK_REWARD_COINS,
+                BackpackerConstants.TX_TASK_REWARD, orderId, "Reward menyelesaikan tugas");
+        adjustReputation(executorId, BackpackerConstants.REPUTATION_TASK_COMPLETE,
+                BackpackerConstants.REP_TASK_COMPLETE, orderId, "Tugas berhasil diselesaikan");
+        profileMapper.incrementCompletedTasks(executorId);
+    }
+
+    @Override
+    public void assertCanTakeTask(Long userId)
+    {
+        if (!canTakeTask(userId))
+        {
+            BizBackpackerProfile profile = getOrCreateProfile(userId);
+            throw new ServiceException("Reputasi Anda terlalu rendah (" + profile.getReputationScore()
+                    + "). Minimum " + BackpackerConstants.MIN_REPUTATION_TO_TAKE
+                    + " poin diperlukan untuk menerima tugas baru.");
+        }
+    }
+
+    @Override
+    public boolean canTakeTask(Long userId)
+    {
+        BizBackpackerProfile profile = getOrCreateProfile(userId);
+        return profile.getReputationScore() >= BackpackerConstants.MIN_REPUTATION_TO_TAKE;
+    }
+
+    @Override
+    @Transactional
+    public void applyRatingReputation(Long executorId, int score, Long orderId)
+    {
+        if (score <= BackpackerConstants.RATING_BAD_MAX)
+        {
+            adjustReputation(executorId, BackpackerConstants.REPUTATION_BAD_RATING,
+                    BackpackerConstants.REP_BAD_RATING, orderId, "Penilaian buruk dari pembuat tugas");
+        }
+        else if (score >= BackpackerConstants.RATING_GOOD_MIN)
+        {
+            adjustReputation(executorId, BackpackerConstants.REPUTATION_GOOD_RATING,
+                    BackpackerConstants.REP_GOOD_RATING, orderId, "Penilaian bagus dari pembuat tugas");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void penaltyTaskAbandoned(Long executorId, Long orderId)
+    {
+        getOrCreateProfile(executorId);
+        adjustReputation(executorId, BackpackerConstants.REPUTATION_TASK_FAILED,
+                BackpackerConstants.REP_TASK_FAILED, orderId, "Tugas dibatalkan oleh pelaksana");
+        profileMapper.incrementFailedTasks(executorId);
+    }
+
+    private void adjustReputation(Long userId, int delta, String reason, Long refId, String remark)
+    {
+        if (profileMapper.adjustReputationScore(userId, delta) <= 0)
+        {
+            throw new ServiceException("Gagal memperbarui reputasi");
+        }
+        BizBackpackerProfile updated = profileMapper.selectProfileByUserId(userId);
+        BizReputationLog log = new BizReputationLog();
+        log.setUserId(userId);
+        log.setDelta(delta);
+        log.setScoreAfter(updated.getReputationScore());
+        log.setReason(reason);
+        log.setRefId(refId);
+        log.setRemark(remark);
+        log.setCreateTime(DateUtils.getNowDate());
+        profileMapper.insertReputationLog(log);
     }
 
     private void creditCoins(Long userId, int amount, String txType, Long refId, String remark)

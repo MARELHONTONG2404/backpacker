@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iwip.system.mapper.BizOrderRatingMapper">
+
+    <resultMap type="BizOrderRating" id="RatingResult">
+        <id     property="ratingId"   column="rating_id"   />
+        <result property="orderId"    column="order_id"    />
+        <result property="raterId"    column="rater_id"    />
+        <result property="executorId" column="executor_id" />
+        <result property="score"      column="score"       />
+        <result property="comment"    column="comment"     />
+        <result property="createTime" column="create_time" />
+    </resultMap>
+
+    <select id="selectRatingByOrderId" parameterType="Long" resultMap="RatingResult">
+        select rating_id, order_id, rater_id, executor_id, score, comment, create_time
+        from biz_order_rating
+        where order_id = #{orderId}
+    </select>
+
+    <insert id="insertRating" parameterType="BizOrderRating" useGeneratedKeys="true" keyProperty="ratingId">
+        insert into biz_order_rating (order_id, rater_id, executor_id, score, comment, create_time)
+        values (#{orderId}, #{raterId}, #{executorId}, #{score}, #{comment}, #{createTime})
+    </insert>
+
+</mapper>

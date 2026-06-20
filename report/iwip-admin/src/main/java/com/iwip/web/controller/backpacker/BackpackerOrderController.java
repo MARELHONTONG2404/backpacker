@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.iwip.common.core.controller.BaseController;
 import com.iwip.common.core.domain.AjaxResult;
+import com.iwip.common.core.domain.model.BackpackerOrderRateBody;
 import com.iwip.common.core.page.TableDataInfo;
 import com.iwip.common.exception.ServiceException;
 import com.iwip.system.domain.BizOrder;
@@ -114,6 +115,35 @@ public class BackpackerOrderController extends BaseController
             String reason = body != null ? body.getCancelReason() : null;
             BizOrder cancelled = bizOrderService.cancelOrder(orderId, getUserId(), getUsername(), reason);
             return AjaxResult.success("Pesanan berhasil dibatalkan", cancelled);
+        }
+        catch (ServiceException ex)
+        {
+            return error(ex.getMessage());
+        }
+    }
+
+    @PostMapping("/{orderId}/abandon")
+    public AjaxResult abandon(@PathVariable Long orderId, @RequestBody(required = false) BizOrder body)
+    {
+        try
+        {
+            String reason = body != null ? body.getCancelReason() : null;
+            BizOrder abandoned = bizOrderService.abandonOrder(orderId, getUserId(), getUsername(), reason);
+            return AjaxResult.success("Tugas berhasil dilepas", abandoned);
+        }
+        catch (ServiceException ex)
+        {
+            return error(ex.getMessage());
+        }
+    }
+
+    @PostMapping("/{orderId}/rate")
+    public AjaxResult rate(@PathVariable Long orderId, @RequestBody BackpackerOrderRateBody body)
+    {
+        try
+        {
+            BizOrder rated = bizOrderService.rateOrder(orderId, getUserId(), body.getScore(), body.getComment());
+            return AjaxResult.success("Penilaian berhasil disimpan", rated);
         }
         catch (ServiceException ex)
         {

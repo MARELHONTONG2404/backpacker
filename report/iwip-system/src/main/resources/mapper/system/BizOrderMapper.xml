@@ -211,6 +211,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and del_flag = '0'
     </update>
 
+    <update id="abandonBizOrder" parameterType="BizOrder">
+        update biz_order
+        set status = 'PUBLISHED',
+            executor_id = null,
+            taken_at = null,
+            started_at = null,
+            cancel_reason = #{cancelReason},
+            version = version + 1,
+            update_by = #{updateBy},
+            update_time = sysdate()
+        where order_id = #{orderId}
+          and executor_id = #{executorId}
+          and status in ('TAKEN', 'IN_PROGRESS')
+          and del_flag = '0'
+    </update>
+
     <insert id="insertBizOrderLog" parameterType="BizOrderLog" useGeneratedKeys="true" keyProperty="logId">
         insert into biz_order_log (
             order_id, from_status, to_status, operator_id, operator_type, remark, create_time

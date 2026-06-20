@@ -38,6 +38,10 @@ public class BackpackerCoinController extends BaseController
         ajax.put("dailyCheckinReward", BackpackerConstants.DAILY_CHECKIN_COINS);
         ajax.put("canCheckinToday", canCheckinToday(profile));
         ajax.put("canAffordPublish", profile.getCopperCoins() >= BackpackerConstants.PUBLISH_FEE_COINS);
+        ajax.put("minReputationToTake", BackpackerConstants.MIN_REPUTATION_TO_TAKE);
+        ajax.put("canTakeTask", backpackerCoinService.canTakeTask(getUserId()));
+        ajax.put("taskRewardCoins", BackpackerConstants.TASK_REWARD_COINS);
+        ajax.put("reputationTaskComplete", BackpackerConstants.REPUTATION_TASK_COMPLETE);
         return ajax;
     }
 

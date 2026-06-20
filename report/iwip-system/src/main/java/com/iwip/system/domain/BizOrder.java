@@ -69,6 +69,10 @@ public class BizOrder extends BaseEntity
 
     private String executorName;
 
+    private Integer ratingScore;
+
+    private String ratingComment;
+
     public Long getOrderId()
     {
         return orderId;
@@ -273,5 +277,25 @@ public class BizOrder extends BaseEntity
     public void setExecutorName(String executorName)
     {
         this.executorName = executorName;
+    }
+
+    public Integer getRatingScore()
+    {
+        return ratingScore;
+    }
+
+    public void setRatingScore(Integer ratingScore)
+    {
+        this.ratingScore = ratingScore;
+    }
+
+    public String getRatingComment()
+    {
+        return ratingComment;
+    }
+
+    public void setRatingComment(String ratingComment)
+    {
+        this.ratingComment = ratingComment;
     }
 }

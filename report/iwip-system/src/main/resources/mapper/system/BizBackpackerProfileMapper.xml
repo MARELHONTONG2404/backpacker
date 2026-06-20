@@ -81,4 +81,30 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         limit #{limit}
     </select>
 
+    <update id="adjustReputationScore">
+        update biz_backpacker_profile
+        set reputation_score = least(200, greatest(0, reputation_score + #{delta})),
+            update_time = sysdate()
+        where user_id = #{userId}
+    </update>
+
+    <update id="incrementCompletedTasks">
+        update biz_backpacker_profile
+        set completed_tasks = completed_tasks + 1,
+            update_time = sysdate()
+        where user_id = #{userId}
+    </update>
+
+    <update id="incrementFailedTasks">
+        update biz_backpacker_profile
+        set failed_tasks = failed_tasks + 1,
+            update_time = sysdate()
+        where user_id = #{userId}
+    </update>
+
+    <insert id="insertReputationLog" parameterType="BizReputationLog" useGeneratedKeys="true" keyProperty="logId">
+        insert into biz_reputation_log (user_id, delta, score_after, reason, ref_id, remark, create_time)
+        values (#{userId}, #{delta}, #{scoreAfter}, #{reason}, #{refId}, #{remark}, #{createTime})
+    </insert>
+
 </mapper>

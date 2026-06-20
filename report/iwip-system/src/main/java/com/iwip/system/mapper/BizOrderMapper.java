@@ -39,5 +39,7 @@ public interface BizOrderMapper
 
     int cancelBizOrder(BizOrder order);
 
+    int abandonBizOrder(BizOrder order);
+
     int insertBizOrderLog(BizOrderLog log);
 }

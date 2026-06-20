@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import com.iwip.system.domain.BizBackpackerProfile;
 import com.iwip.system.domain.BizCoinTransaction;
+import com.iwip.system.domain.BizReputationLog;
 
 /**
  * Profil backpacker & transaksi koin data layer.
@@ -24,4 +25,12 @@ public interface BizBackpackerProfileMapper
     int insertCoinTransaction(BizCoinTransaction transaction);
 
     List<BizCoinTransaction> selectRecentTransactions(@Param("userId") Long userId, @Param("limit") int limit);
+
+    int adjustReputationScore(@Param("userId") Long userId, @Param("delta") int delta);
+
+    int incrementCompletedTasks(@Param("userId") Long userId);
+
+    int incrementFailedTasks(@Param("userId") Long userId);
+
+    int insertReputationLog(BizReputationLog log);
 }

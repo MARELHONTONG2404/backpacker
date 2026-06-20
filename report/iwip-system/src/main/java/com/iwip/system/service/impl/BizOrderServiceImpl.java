@@ -14,7 +14,9 @@ import com.iwip.common.utils.DateUtils;
 import com.iwip.common.utils.StringUtils;
 import com.iwip.system.domain.BizOrder;
 import com.iwip.system.domain.BizOrderLog;
+import com.iwip.system.domain.BizOrderRating;
 import com.iwip.system.mapper.BizOrderMapper;
+import com.iwip.system.mapper.BizOrderRatingMapper;
 import com.iwip.system.service.IBackpackerCoinService;
 import com.iwip.system.service.IBizOrderService;
 
@@ -28,12 +30,31 @@ public class BizOrderServiceImpl implements IBizOrderService
     private BizOrderMapper bizOrderMapper;
 
     @Autowired
+    private BizOrderRatingMapper orderRatingMapper;
+
+    @Autowired
     private IBackpackerCoinService backpackerCoinService;
 
     @Override
     public BizOrder selectBizOrderById(Long orderId)
     {
-        return bizOrderMapper.selectBizOrderById(orderId);
+        BizOrder order = bizOrderMapper.selectBizOrderById(orderId);
+        enrichWithRating(order);
+        return order;
+    }
+
+    private void enrichWithRating(BizOrder order)
+    {
+        if (order == null)
+        {
+            return;
+        }
+        BizOrderRating rating = orderRatingMapper.selectRatingByOrderId(order.getOrderId());
+        if (rating != null)
+        {
+            order.setRatingScore(rating.getScore());
+            order.setRatingComment(rating.getComment());
+        }
     }
 
     @Override
@@ -152,6 +173,8 @@ public class BizOrderServiceImpl implements IBizOrderService
             throw new ServiceException("Tugas tidak tersedia atau sudah diambil");
         }
 
+        backpackerCoinService.assertCanTakeTask(executorId);
+
         BizOrder update = new BizOrder();
         update.setOrderId(orderId);
         update.setExecutorId(executorId);
@@ -206,7 +229,8 @@ public class BizOrderServiceImpl implements IBizOrderService
         }
 
         insertOrderLog(orderId, BizOrder.STATUS_IN_PROGRESS, BizOrder.STATUS_COMPLETED, executorId, "Tugas selesai");
-        return bizOrderMapper.selectBizOrderById(orderId);
+        backpackerCoinService.rewardTaskCompletion(executorId, orderId);
+        return selectBizOrderById(orderId);
     }
 
     @Override
@@ -240,7 +264,91 @@ public class BizOrderServiceImpl implements IBizOrderService
         }
 
         insertOrderLog(orderId, existing.getStatus(), BizOrder.STATUS_CANCELLED, creatorId, update.getCancelReason());
-        return bizOrderMapper.selectBizOrderById(orderId);
+        return selectBizOrderById(orderId);
+    }
+
+    @Override
+    @Transactional
+    public BizOrder abandonOrder(Long orderId, Long executorId, String username, String reason)
+    {
+        BizOrder existing = bizOrderMapper.selectBizOrderById(orderId);
+        if (existing == null)
+        {
+            throw new ServiceException("Pesanan tidak ditemukan");
+        }
+        if (!executorId.equals(existing.getExecutorId()))
+        {
+            throw new ServiceException("Hanya pelaksana yang dapat melepaskan tugas");
+        }
+        if (!BizOrder.STATUS_TAKEN.equals(existing.getStatus())
+                && !BizOrder.STATUS_IN_PROGRESS.equals(existing.getStatus()))
+        {
+            throw new ServiceException("Tugas tidak dapat dilepas pada status ini");
+        }
+
+        String fromStatus = existing.getStatus();
+        BizOrder update = new BizOrder();
+        update.setOrderId(orderId);
+        update.setExecutorId(executorId);
+        update.setCancelReason(StringUtils.isNotEmpty(reason) ? reason : "Dilepas oleh pelaksana");
+        update.setUpdateBy(username);
+
+        if (bizOrderMapper.abandonBizOrder(update) <= 0)
+        {
+            throw new ServiceException("Gagal melepaskan tugas");
+        }
+
+        insertOrderLog(orderId, fromStatus, BizOrder.STATUS_PUBLISHED, executorId, update.getCancelReason());
+        backpackerCoinService.penaltyTaskAbandoned(executorId, orderId);
+        return selectBizOrderById(orderId);
+    }
+
+    @Override
+    @Transactional
+    public BizOrder rateOrder(Long orderId, Long raterId, Integer score, String comment)
+    {
+        if (score == null || score < 1 || score > 5)
+        {
+            throw new ServiceException("Skor penilaian harus antara 1 hingga 5");
+        }
+
+        BizOrder existing = bizOrderMapper.selectBizOrderById(orderId);
+        if (existing == null)
+        {
+            throw new ServiceException("Pesanan tidak ditemukan");
+        }
+        if (!raterId.equals(existing.getCreatorId()))
+        {
+            throw new ServiceException("Hanya pembuat tugas yang dapat memberi penilaian");
+        }
+        if (!BizOrder.STATUS_COMPLETED.equals(existing.getStatus()))
+        {
+            throw new ServiceException("Hanya tugas selesai yang dapat dinilai");
+        }
+        if (existing.getExecutorId() == null)
+        {
+            throw new ServiceException("Tugas tidak memiliki pelaksana");
+        }
+        if (orderRatingMapper.selectRatingByOrderId(orderId) != null)
+        {
+            throw new ServiceException("Tugas ini sudah dinilai");
+        }
+
+        BizOrderRating rating = new BizOrderRating();
+        rating.setOrderId(orderId);
+        rating.setRaterId(raterId);
+        rating.setExecutorId(existing.getExecutorId());
+        rating.setScore(score);
+        rating.setComment(comment);
+        rating.setCreateTime(DateUtils.getNowDate());
+
+        if (orderRatingMapper.insertRating(rating) <= 0)
+        {
+            throw new ServiceException("Gagal menyimpan penilaian");
+        }
+
+        backpackerCoinService.applyRatingReputation(existing.getExecutorId(), score, orderId);
+        return selectBizOrderById(orderId);
     }
 
     private BizOrder requireExecutorOrder(Long orderId, Long executorId, String expectedStatus, String forbiddenMessage)
