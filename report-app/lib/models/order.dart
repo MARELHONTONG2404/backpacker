@@ -1,3 +1,5 @@
+import 'backpacker_profile.dart';
+
 class OrderItem {
   OrderItem({
     required this.orderId,
@@ -34,8 +36,15 @@ class OrderItem {
   final String? ratingComment;
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
+    int readInt(dynamic value) {
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
     return OrderItem(
-      orderId: json['orderId'] as int,
+      orderId: readInt(json['orderId']),
       orderNo: json['orderNo'] as String? ?? '',
       title: json['title'] as String? ?? '',
       status: json['status'] as String? ?? '',
@@ -43,12 +52,12 @@ class OrderItem {
       description: json['description'] as String?,
       category: json['category'] as String?,
       locationText: json['locationText'] as String?,
-      creatorId: json['creatorId'] as int?,
-      executorId: json['executorId'] as int?,
+      creatorId: json['creatorId'] == null ? null : readInt(json['creatorId']),
+      executorId: json['executorId'] == null ? null : readInt(json['executorId']),
       creatorName: json['creatorName'] as String?,
       executorName: json['executorName'] as String?,
       cancelReason: json['cancelReason'] as String?,
-      ratingScore: json['ratingScore'] as int?,
+      ratingScore: json['ratingScore'] == null ? null : readInt(json['ratingScore']),
       ratingComment: json['ratingComment'] as String?,
     );
   }
@@ -141,18 +150,37 @@ class OrderItem {
 }
 
 enum OrderAction {
-  publish('publish', 'Publish', 'Publikasikan tugas ke marketplace? Biaya: 5 koin tembaga.'),
-  cancel('cancel', 'Batalkan', 'Batalkan pesanan ini?'),
-  take('take', 'Ambil Tugas', 'Ambil tugas ini?'),
-  start('start', 'Mulai Kerjakan', 'Mulai mengerjakan tugas?'),
-  complete('complete', 'Selesai', 'Tandai tugas sebagai selesai? Anda akan mendapat +3 koin dan +5 reputasi.'),
-  abandon('abandon', 'Lepas Tugas', 'Lepas tugas ini? Reputasi Anda akan berkurang.');
+  publish('publish', 'Publish'),
+  cancel('cancel', 'Batalkan'),
+  take('take', 'Ambil Tugas'),
+  start('start', 'Mulai Kerjakan'),
+  complete('complete', 'Selesai'),
+  abandon('abandon', 'Lepas Tugas');
 
-  const OrderAction(this.apiKey, this.label, this.confirmMessage);
+  const OrderAction(this.apiKey, this.label);
 
   final String apiKey;
   final String label;
-  final String confirmMessage;
+
+  String message(BackpackerProfile? profile) {
+    switch (this) {
+      case OrderAction.publish:
+        final fee = profile?.publishFee ?? 5;
+        return 'Publikasikan tugas ke marketplace? Biaya publikasi: $fee koin tembaga.';
+      case OrderAction.cancel:
+        return 'Batalkan pesanan ini?';
+      case OrderAction.take:
+        return 'Ambil tugas ini dan kerjakan sebagai pelaksana?';
+      case OrderAction.start:
+        return 'Mulai mengerjakan tugas ini?';
+      case OrderAction.complete:
+        final coins = profile?.taskRewardCoins ?? 3;
+        final rep = profile?.reputationTaskComplete ?? 5;
+        return 'Tandai tugas selesai? Anda mendapat +$coins koin dan +$rep reputasi.';
+      case OrderAction.abandon:
+        return 'Lepas tugas ini? Reputasi Anda akan menurun.';
+    }
+  }
 
   bool get needsCancelReason => this == OrderAction.cancel || this == OrderAction.abandon;
 

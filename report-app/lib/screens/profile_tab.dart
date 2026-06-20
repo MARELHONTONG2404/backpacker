@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../config/app_strings.dart';
 import '../models/backpacker_profile.dart';
 import '../models/coin_transaction.dart';
 import '../models/app_notification.dart';
@@ -9,18 +8,17 @@ import '../services/api_service.dart';
 import '../services/auth_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
+import '../widgets/gamification_banner.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({
     super.key,
     required this.api,
-    required this.coinProfile,
     required this.onProfileChanged,
     required this.onLogout,
   });
 
   final ApiService api;
-  final BackpackerProfile? coinProfile;
   final VoidCallback onProfileChanged;
   final VoidCallback onLogout;
 
@@ -31,10 +29,12 @@ class ProfileTab extends StatefulWidget {
 class _ProfileTabState extends State<ProfileTab> {
   final _storage = AuthStorage();
   UserProfile? _user;
+  BackpackerProfile? _coinProfile;
   List<CoinTransaction> _transactions = [];
   List<AppNotification> _notifications = [];
   bool _loading = true;
   bool _checkinLoading = false;
+  String? _coinError;
   int _unreadCount = 0;
 
   @override
@@ -44,15 +44,37 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _coinError = null;
+    });
     try {
       final user = await widget.api.fetchUserProfile();
-      final tx = await widget.api.fetchCoinTransactions();
-      final notifications = await widget.api.fetchNotifications();
-      final unread = await widget.api.fetchUnreadNotificationCount();
+      BackpackerProfile? coins;
+      try {
+        coins = await widget.api.fetchCoinProfile();
+      } on ApiException catch (error) {
+        _coinError = error.message;
+      } catch (error) {
+        _coinError = 'Gagal memuat koin: $error';
+      }
+
+      List<CoinTransaction> tx = [];
+      try {
+        tx = await widget.api.fetchCoinTransactions();
+      } catch (_) {}
+
+      List<AppNotification> notifications = [];
+      var unread = 0;
+      try {
+        notifications = await widget.api.fetchNotifications();
+        unread = await widget.api.fetchUnreadNotificationCount();
+      } catch (_) {}
+
       if (mounted) {
         setState(() {
           _user = user;
+          _coinProfile = coins;
           _transactions = tx;
           _notifications = notifications;
           _unreadCount = unread;
@@ -66,14 +88,14 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Future<void> _checkin() async {
-    if (widget.coinProfile != null && !widget.coinProfile!.canCheckinToday) return;
+    if (_coinProfile != null && !_coinProfile!.canCheckinToday) return;
     setState(() => _checkinLoading = true);
     try {
       await widget.api.dailyCheckin();
       widget.onProfileChanged();
       await _load();
       if (mounted) {
-        showAppMessage(context, 'Check-in berhasil! +${widget.coinProfile?.dailyCheckinReward ?? 2} koin');
+        showAppMessage(context, 'Check-in berhasil! +${_coinProfile?.dailyCheckinReward ?? 2} koin');
       }
     } on ApiException catch (error) {
       if (mounted) showAppMessage(context, error.message);
@@ -140,12 +162,21 @@ class _ProfileTabState extends State<ProfileTab> {
       return const LoadingView(message: 'Memuat profil...');
     }
 
-    final profile = widget.coinProfile;
+    final profile = _coinProfile;
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
+          GamificationBanner(
+            profile: profile,
+            errorMessage: _coinError,
+            checkinLoading: _checkinLoading,
+            onCheckin: _checkin,
+            onRetry: _load,
+          ),
+          const SizedBox(height: 12),
           SectionCard(
             title: 'Akun Saya',
             child: Column(
@@ -167,31 +198,23 @@ class _ProfileTabState extends State<ProfileTab> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          SectionCard(
-            title: AppStrings.copperCoins,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('${profile?.copperCoins ?? 0}', style: Theme.of(context).textTheme.headlineSmall),
-                      Text('Reputasi: ${profile?.reputationScore ?? 0}', style: Theme.of(context).textTheme.bodyMedium),
-                      if (profile?.completedTasks != null)
-                        Text('Tugas selesai: ${profile!.completedTasks}', style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
-                ),
-                FilledButton(
-                  onPressed: (profile?.canCheckinToday ?? false) && !_checkinLoading ? _checkin : null,
-                  child: _checkinLoading
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Text(profile?.canCheckinToday ?? false ? AppStrings.checkin : AppStrings.checkinDone),
-                ),
-              ],
+          if (profile != null) ...[
+            const SizedBox(height: 12),
+            SectionCard(
+              title: 'Statistik',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Biaya publikasi: ${profile.publishFee} koin'),
+                  Text('Reward selesai tugas: +${profile.taskRewardCoins ?? 3} koin'),
+                  Text('Reputasi per tugas: +${profile.reputationTaskComplete ?? 5} poin'),
+                  if (profile.completedTasks != null) Text('Tugas selesai: ${profile.completedTasks}'),
+                  if (profile.lastCheckinDate != null)
+                    Text('Check-in terakhir: ${profile.lastCheckinDate}'),
+                ],
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: 12),
           SectionCard(
             title: 'Riwayat Koin',
@@ -200,16 +223,29 @@ class _ProfileTabState extends State<ProfileTab> {
                 : Column(
                     children: _transactions.take(10).map((tx) {
                       final sign = tx.amount >= 0 ? '+' : '';
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(tx.remark ?? tx.txType),
-                        subtitle: Text(tx.createTime ?? ''),
-                        trailing: Text(
-                          '$sign${tx.amount}',
-                          style: TextStyle(
-                            color: tx.amount >= 0 ? AppColors.secondary : Theme.of(context).colorScheme.error,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(tx.remark ?? tx.txType, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                  if (tx.createTime != null)
+                                    Text(tx.createTime!, style: Theme.of(context).textTheme.bodySmall),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              '$sign${tx.amount}',
+                              style: TextStyle(
+                                color: tx.amount >= 0 ? AppColors.secondary : Theme.of(context).colorScheme.error,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     }).toList(),
@@ -230,15 +266,31 @@ class _ProfileTabState extends State<ProfileTab> {
                   const Text('Belum ada notifikasi')
                 else
                   ..._notifications.take(10).map((n) {
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(
-                        n.isRead ? Icons.notifications_none : Icons.notifications_active,
-                        color: n.isRead ? AppColors.textSecondary : AppColors.primary,
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            n.isRead ? Icons.notifications_none : Icons.notifications_active,
+                            color: n.isRead ? AppColors.textSecondary : AppColors.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  n.title,
+                                  style: TextStyle(fontWeight: n.isRead ? FontWeight.normal : FontWeight.w600),
+                                ),
+                                const SizedBox(height: 4),
+                                Text('${n.content}\n${n.createTime ?? ''}'),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      title: Text(n.title, style: TextStyle(fontWeight: n.isRead ? FontWeight.normal : FontWeight.w600)),
-                      subtitle: Text('${n.content}\n${n.createTime ?? ''}'),
-                      isThreeLine: true,
                     );
                   }),
               ],

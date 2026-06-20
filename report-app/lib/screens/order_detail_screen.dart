@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_strings.dart';
+import '../models/backpacker_profile.dart';
 import '../models/order.dart';
 import '../services/api_service.dart';
 import '../services/auth_storage.dart';
@@ -29,6 +30,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   bool _loading = true;
   OrderItem? _order;
   int? _userId;
+  BackpackerProfile? _coinProfile;
   int _ratingScore = 5;
   final _ratingCommentController = TextEditingController();
   bool _ratingLoading = false;
@@ -70,7 +72,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     try {
       _userId ??= await _storage.getUserId();
       final order = await widget.api.fetchOrderDetail(widget.orderId);
-      if (mounted) setState(() => _order = order);
+      BackpackerProfile? profile;
+      try {
+        profile = await widget.api.fetchCoinProfile();
+      } catch (_) {}
+      if (mounted) {
+        setState(() {
+          _order = order;
+          _coinProfile = profile;
+        });
+      }
     } on ApiException catch (error) {
       if (mounted) showAppMessage(context, error.message);
     } finally {
@@ -93,6 +104,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16),
                     children: [
                       _StatusHeader(order: order),
@@ -214,6 +226,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         order: order,
                         api: widget.api,
                         userId: _userId,
+                        profile: _coinProfile,
                         onChanged: _load,
                       ),
                       const SizedBox(height: 24),

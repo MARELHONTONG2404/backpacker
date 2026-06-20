@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_strings.dart';
 import '../theme/app_theme.dart';
+import 'auth_background.dart';
 
 /// Layout auth selaras konsep sistem Backpacker.
 class SystemAuthShell extends StatelessWidget {
@@ -16,8 +17,6 @@ class SystemAuthShell extends StatelessWidget {
   final Widget child;
   final bool showFooter;
 
-  static const _backgroundAsset = 'assets/images/login-background.jpg';
-
   @override
   Widget build(BuildContext context) {
     final cardWidth =
@@ -27,7 +26,7 @@ class SystemAuthShell extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(_backgroundAsset, fit: BoxFit.cover),
+          const AuthBackground(),
           Container(color: Colors.black.withValues(alpha: 0.18)),
           Center(
             child: SingleChildScrollView(

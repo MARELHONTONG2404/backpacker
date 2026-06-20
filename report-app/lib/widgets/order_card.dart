@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config/app_strings.dart';
 import '../models/order.dart';
 import '../theme/app_theme.dart';
 import 'common_widgets.dart';
@@ -11,12 +12,14 @@ class OrderCard extends StatelessWidget {
     required this.onTap,
     this.trailing,
     this.roleLabel,
+    this.userId,
   });
 
   final OrderItem order;
   final VoidCallback onTap;
   final Widget? trailing;
   final String? roleLabel;
+  final int? userId;
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +71,20 @@ class OrderCard extends StatelessWidget {
                     ),
                   ),
                   StatusBadge(label: order.statusLabel, status: order.status),
+                  if (order.canRate(userId)) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Text(
+                        AppStrings.needsRating,
+                        style: TextStyle(color: AppColors.secondary, fontSize: 11, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 14),
@@ -84,6 +101,7 @@ class OrderCard extends StatelessWidget {
                       child: _MetaChip(
                         icon: Icons.location_on_outlined,
                         label: order.locationText!,
+                        expand: true,
                       ),
                     ),
                   ],
@@ -130,15 +148,18 @@ class _MetaChip extends StatelessWidget {
     required this.icon,
     required this.label,
     this.emphasized = false,
+    this.expand = false,
   });
 
   final IconData icon;
   final String label;
   final bool emphasized;
+  final bool expand;
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: expand ? double.infinity : null,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: emphasized
@@ -147,7 +168,7 @@ class _MetaChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
         children: [
           Icon(
             icon,
@@ -155,17 +176,30 @@ class _MetaChip extends StatelessWidget {
             color: emphasized ? AppColors.primary : AppColors.textSecondary,
           ),
           const SizedBox(width: 4),
-          Flexible(
-            child: Text(
+          if (expand)
+            Expanded(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: emphasized ? FontWeight.w700 : FontWeight.w500,
+                  color: emphasized ? AppColors.primaryDark : AppColors.textSecondary,
+                ),
+              ),
+            )
+          else
+            Text(
               label,
               overflow: TextOverflow.ellipsis,
+              maxLines: 1,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: emphasized ? FontWeight.w700 : FontWeight.w500,
                 color: emphasized ? AppColors.primaryDark : AppColors.textSecondary,
               ),
             ),
-          ),
         ],
       ),
     );

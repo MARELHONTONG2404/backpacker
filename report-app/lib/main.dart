@@ -6,6 +6,7 @@ import 'screens/login_screen.dart';
 import 'services/api_service.dart';
 import 'services/auth_storage.dart';
 import 'theme/app_theme.dart';
+import 'widgets/auth_background.dart';
 
 void main() {
   runApp(const BackpackerApp());
@@ -58,7 +59,7 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/images/login-background.jpg', fit: BoxFit.cover),
+          const AuthBackground(),
           Container(color: Colors.black.withValues(alpha: 0.35)),
           Center(
             child: Column(

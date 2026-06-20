@@ -7,6 +7,8 @@ import '../services/api_service.dart';
 import '../services/auth_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
+import '../widgets/backpacker_rules_card.dart';
+import '../widgets/gamification_banner.dart';
 import '../widgets/order_action_handler.dart';
 import '../widgets/order_card.dart';
 import 'login_screen.dart';
@@ -28,6 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _nickName;
   int? _userId;
   BackpackerProfile? _coinProfile;
+  bool _coinLoading = true;
+  bool _checkinLoading = false;
+  String? _coinError;
 
   @override
   void initState() {
@@ -38,30 +43,57 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadProfile() async {
     final nickName = await _storage.getNickName();
     final userId = await _storage.getUserId();
+    if (mounted) {
+      setState(() {
+        _nickName = nickName;
+        _userId = userId;
+        _coinLoading = true;
+        _coinError = null;
+      });
+    }
     try {
       final coins = await widget.api.fetchCoinProfile();
       if (mounted) {
         setState(() {
-          _nickName = nickName;
-          _userId = userId;
           _coinProfile = coins;
+          _coinLoading = false;
+          _coinError = null;
         });
       }
     } on ApiException catch (error) {
       if (mounted) {
         setState(() {
-          _nickName = nickName;
-          _userId = userId;
+          _coinProfile = null;
+          _coinLoading = false;
+          _coinError = error.message;
         });
         showAppMessage(context, error.message);
       }
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         setState(() {
-          _nickName = nickName;
-          _userId = userId;
+          _coinProfile = null;
+          _coinLoading = false;
+          _coinError = 'Gagal memuat data koin: $error';
         });
+        showAppMessage(context, _coinError!);
       }
+    }
+  }
+
+  Future<void> _checkin() async {
+    if (_coinProfile != null && !_coinProfile!.canCheckinToday) return;
+    setState(() => _checkinLoading = true);
+    try {
+      await widget.api.dailyCheckin();
+      await _loadProfile();
+      if (mounted) {
+        showAppMessage(context, 'Check-in berhasil! +${_coinProfile?.dailyCheckinReward ?? 2} koin');
+      }
+    } on ApiException catch (error) {
+      if (mounted) showAppMessage(context, error.message);
+    } finally {
+      if (mounted) setState(() => _checkinLoading = false);
     }
   }
 
@@ -88,13 +120,13 @@ class _HomeScreenState extends State<HomeScreen> {
   String get _tabTitle {
     switch (_tabIndex) {
       case 0:
-        return 'Tugas Tersedia';
+        return AppStrings.tabAvailable;
       case 1:
-        return 'Pesanan Saya';
+        return AppStrings.tabMine;
       case 2:
-        return 'Buat Tugas';
+        return AppStrings.tabCreate;
       default:
-        return 'Profil Saya';
+        return AppStrings.tabProfile;
     }
   }
 
@@ -102,81 +134,76 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(_tabTitle),
-            if (_nickName != null)
-              Text(
-                AppStrings.welcomeHello.replaceFirst('{name}', _nickName!),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-              ),
-          ],
-        ),
+        title: Text(_tabTitle),
         actions: [
-          if (_coinProfile != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Chip(
-                    avatar: const Icon(Icons.monetization_on_outlined, size: 18, color: AppColors.primary),
-                    label: Text('${_coinProfile!.copperCoins}'),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  const SizedBox(width: 4),
-                  Chip(
-                    avatar: Icon(
-                      Icons.star_rounded,
-                      size: 18,
-                      color: _coinProfile!.canTakeTask ? AppColors.secondary : Theme.of(context).colorScheme.error,
-                    ),
-                    label: Text('${_coinProfile!.reputationScore}'),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ],
-              ),
-            ),
           IconButton(
             onPressed: _logout,
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Keluar',
           ),
         ],
+        bottom: _nickName == null
+            ? null
+            : PreferredSize(
+                preferredSize: const Size.fromHeight(22),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: Text(
+                      AppStrings.welcomeHello.replaceFirst('{name}', _nickName!),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                  ),
+                ),
+              ),
       ),
-      body: IndexedStack(
-        index: _tabIndex,
+      body: Column(
         children: [
-          _AvailableTab(
-            api: widget.api,
-            userId: _userId,
-            coinProfile: _coinProfile,
-            onTapOrder: _openDetail,
-            onCoinsChanged: _loadProfile,
+          GamificationBanner(
+            profile: _coinProfile,
+            loading: _coinLoading,
+            checkinLoading: _checkinLoading,
+            errorMessage: _coinError,
+            onCheckin: _checkin,
+            onRetry: _loadProfile,
           ),
-          _MyOrdersTab(
-            api: widget.api,
-            userId: _userId,
-            onTapOrder: _openDetail,
-            onCoinsChanged: _loadProfile,
-          ),
-          _CreateOrderTab(
-            api: widget.api,
-            coinProfile: _coinProfile,
-            onCreated: () {
-              _loadProfile();
-              setState(() => _tabIndex = 1);
-            },
-          ),
-          ProfileTab(
-            api: widget.api,
-            coinProfile: _coinProfile,
-            onProfileChanged: _loadProfile,
-            onLogout: _logout,
+          Expanded(
+            child: IndexedStack(
+              index: _tabIndex,
+              children: [
+                _AvailableTab(
+                  api: widget.api,
+                  userId: _userId,
+                  coinProfile: _coinProfile,
+                  onTapOrder: _openDetail,
+                  onCoinsChanged: _loadProfile,
+                ),
+                _MyOrdersTab(
+                  api: widget.api,
+                  userId: _userId,
+                  coinProfile: _coinProfile,
+                  onTapOrder: _openDetail,
+                  onCoinsChanged: _loadProfile,
+                ),
+                _CreateOrderTab(
+                  api: widget.api,
+                  coinProfile: _coinProfile,
+                  onCreated: () {
+                    _loadProfile();
+                    setState(() => _tabIndex = 1);
+                  },
+                ),
+                ProfileTab(
+                  api: widget.api,
+                  onProfileChanged: _loadProfile,
+                  onLogout: _logout,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -288,30 +315,33 @@ class _AvailableTabState extends State<_AvailableTab> {
                 ),
               ),
               const SizedBox(width: 8),
-              DropdownButton<String?>(
-                value: _category,
-                hint: const Text('Kategori'),
-                items: const [
-                  DropdownMenuItem(value: null, child: Text('Semua')),
-                  DropdownMenuItem(value: 'general', child: Text('Umum')),
-                  DropdownMenuItem(value: 'delivery', child: Text('Antar')),
-                  DropdownMenuItem(value: 'helper', child: Text('Bantuan')),
-                  DropdownMenuItem(value: 'tech', child: Text('Teknisi')),
-                  DropdownMenuItem(value: 'errands', child: Text('Errands')),
-                ],
-                onChanged: (value) {
-                  setState(() => _category = value);
-                  _load();
-                },
+              Expanded(
+                flex: 2,
+                child: DropdownButton<String?>(
+                  isExpanded: true,
+                  value: _category,
+                  hint: const Text('Kategori'),
+                  underline: const SizedBox.shrink(),
+                  items: const [
+                    DropdownMenuItem(value: null, child: Text('Semua')),
+                    DropdownMenuItem(value: 'general', child: Text('Umum')),
+                    DropdownMenuItem(value: 'delivery', child: Text('Antar')),
+                    DropdownMenuItem(value: 'helper', child: Text('Bantuan')),
+                    DropdownMenuItem(value: 'tech', child: Text('Teknisi')),
+                    DropdownMenuItem(value: 'errands', child: Text('Errands')),
+                  ],
+                  onChanged: (value) {
+                    setState(() => _category = value);
+                    _load();
+                  },
+                ),
               ),
             ],
           ),
         ),
         if (widget.coinProfile != null && !widget.coinProfile!.canTakeTask)
           MaterialBanner(
-            content: Text(
-              '${AppStrings.reputationLow} Minimum ${widget.coinProfile!.minReputationToTake} poin.',
-            ),
+            content: Text(widget.coinProfile!.reputationBlockedMessage),
             leading: Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.error),
             actions: [TextButton(onPressed: _load, child: const Text('Refresh'))],
           ),
@@ -320,27 +350,34 @@ class _AvailableTabState extends State<_AvailableTab> {
             onRefresh: _load,
             child: _orders.isEmpty
                 ? ListView(
-                    children: const [
-                      SizedBox(height: 120),
-                      EmptyState(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      BackpackerRulesCard(profile: widget.coinProfile),
+                      const SizedBox(height: 80),
+                      const EmptyState(
                         icon: Icons.search_off_outlined,
                         title: 'Belum ada tugas tersedia',
-                        subtitle: 'Tarik ke bawah untuk refresh atau buat tugas baru.',
+                        subtitle: 'Tugas dari backpacker lain akan muncul di sini.',
                       ),
                     ],
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                    itemCount: _orders.length,
+                    itemCount: _orders.length + 1,
                     itemBuilder: (context, index) {
-                      final order = _orders[index];
+                      if (index == 0) {
+                        return BackpackerRulesCard(profile: widget.coinProfile);
+                      }
+                      final order = _orders[index - 1];
                       return OrderCard(
                         order: order,
                         onTap: () => widget.onTapOrder(order),
+                        userId: widget.userId,
                         trailing: OrderActionButtons(
                           order: order,
                           api: widget.api,
                           userId: widget.userId,
+                          profile: widget.coinProfile,
                           marketplace: true,
                           compact: true,
                           onChanged: widget.onCoinsChanged,
@@ -361,12 +398,14 @@ class _MyOrdersTab extends StatefulWidget {
     required this.userId,
     required this.onTapOrder,
     required this.onCoinsChanged,
+    this.coinProfile,
   });
 
   final ApiService api;
   final int? userId;
   final ValueChanged<OrderItem> onTapOrder;
   final VoidCallback onCoinsChanged;
+  final BackpackerProfile? coinProfile;
 
   @override
   State<_MyOrdersTab> createState() => _MyOrdersTabState();
@@ -397,6 +436,9 @@ class _MyOrdersTabState extends State<_MyOrdersTab> {
 
   @override
   Widget build(BuildContext context) {
+    final needsRatingCount =
+        _orders.where((order) => order.canRate(widget.userId)).length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -415,6 +457,15 @@ class _MyOrdersTabState extends State<_MyOrdersTab> {
             },
           ),
         ),
+        if (needsRatingCount > 0)
+          MaterialBanner(
+            content: Text(
+              '$needsRatingCount tugas selesai perlu dinilai. '
+              'Penilaian buruk menurunkan reputasi pelaksana.',
+            ),
+            leading: const Icon(Icons.rate_review_outlined, color: AppColors.secondary),
+            actions: [TextButton(onPressed: _load, child: const Text('Refresh'))],
+          ),
         Expanded(
           child: _loading
               ? const LoadingView(message: 'Memuat pesanan...')
@@ -434,11 +485,13 @@ class _MyOrdersTabState extends State<_MyOrdersTab> {
                             return OrderCard(
                               order: order,
                               roleLabel: order.roleLabel(widget.userId),
+                              userId: widget.userId,
                               onTap: () => widget.onTapOrder(order),
                               trailing: OrderActionButtons(
                                 order: order,
                                 api: widget.api,
                                 userId: widget.userId,
+                                profile: widget.coinProfile,
                                 onChanged: () {
                                   _load();
                                   widget.onCoinsChanged();
@@ -531,6 +584,8 @@ class _CreateOrderTabState extends State<_CreateOrderTab> {
         key: _formKey,
         child: Column(
           children: [
+            BackpackerRulesCard(profile: widget.coinProfile),
+            const SizedBox(height: 8),
             SectionCard(
               title: 'Informasi Tugas',
               child: Column(
@@ -605,6 +660,17 @@ class _CreateOrderTabState extends State<_CreateOrderTab> {
                                   ? AppColors.textRegular
                                   : Theme.of(context).colorScheme.error,
                             ),
+                      ),
+                    ),
+                  if (widget.coinProfile != null && !widget.coinProfile!.canAffordPublish)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        widget.coinProfile!.publishBlockedMessage,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   SwitchListTile(
