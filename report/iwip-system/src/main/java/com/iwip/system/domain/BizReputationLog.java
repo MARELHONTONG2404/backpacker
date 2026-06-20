@@ -2,12 +2,15 @@ package com.iwip.system.domain;
 
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.iwip.common.core.domain.BaseEntity;
 
 /**
  * Log perubahan reputasi biz_reputation_log.
  */
-public class BizReputationLog
+public class BizReputationLog extends BaseEntity
 {
+    private static final long serialVersionUID = 1L;
+
     private Long logId;
 
     private Long userId;
@@ -24,6 +27,10 @@ public class BizReputationLog
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
+
+    private String userName;
+
+    private String nickName;
 
     public Long getLogId()
     {
@@ -103,5 +110,25 @@ public class BizReputationLog
     public void setCreateTime(Date createTime)
     {
         this.createTime = createTime;
+    }
+
+    public String getUserName()
+    {
+        return userName;
+    }
+
+    public void setUserName(String userName)
+    {
+        this.userName = userName;
+    }
+
+    public String getNickName()
+    {
+        return nickName;
+    }
+
+    public void setNickName(String nickName)
+    {
+        this.nickName = nickName;
     }
 }

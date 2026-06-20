@@ -33,4 +33,10 @@ public interface BizBackpackerProfileMapper
     int incrementFailedTasks(@Param("userId") Long userId);
 
     int insertReputationLog(BizReputationLog log);
+
+    List<BizBackpackerProfile> selectProfileList(BizBackpackerProfile profile);
+
+    List<BizCoinTransaction> selectCoinTransactionList(BizCoinTransaction transaction);
+
+    List<BizReputationLog> selectReputationLogList(BizReputationLog log);
 }

@@ -2,12 +2,15 @@ package com.iwip.system.domain;
 
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.iwip.common.core.domain.BaseEntity;
 
 /**
  * Riwayat transaksi koin tembaga.
  */
-public class BizCoinTransaction
+public class BizCoinTransaction extends BaseEntity
 {
+    private static final long serialVersionUID = 1L;
+
     private Long transactionId;
 
     private Long userId;
@@ -24,6 +27,10 @@ public class BizCoinTransaction
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
+
+    private String userName;
+
+    private String nickName;
 
     public Long getTransactionId()
     {
@@ -103,5 +110,25 @@ public class BizCoinTransaction
     public void setCreateTime(Date createTime)
     {
         this.createTime = createTime;
+    }
+
+    public String getUserName()
+    {
+        return userName;
+    }
+
+    public void setUserName(String userName)
+    {
+        this.userName = userName;
+    }
+
+    public String getNickName()
+    {
+        return nickName;
+    }
+
+    public void setNickName(String nickName)
+    {
+        this.nickName = nickName;
     }
 }

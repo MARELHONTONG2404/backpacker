@@ -1,5 +1,6 @@
 package com.iwip.system.mapper;
 
+import java.util.List;
 import com.iwip.system.domain.BizOrderRating;
 
 /**
@@ -10,4 +11,6 @@ public interface BizOrderRatingMapper
     BizOrderRating selectRatingByOrderId(Long orderId);
 
     int insertRating(BizOrderRating rating);
+
+    List<BizOrderRating> selectRatingList(BizOrderRating rating);
 }

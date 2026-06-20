@@ -2,12 +2,15 @@ package com.iwip.system.domain;
 
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.iwip.common.core.domain.BaseEntity;
 
 /**
  * Penilaian tugas biz_order_rating.
  */
-public class BizOrderRating
+public class BizOrderRating extends BaseEntity
 {
+    private static final long serialVersionUID = 1L;
+
     private Long ratingId;
 
     private Long orderId;
@@ -22,6 +25,14 @@ public class BizOrderRating
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
+
+    private String orderNo;
+
+    private String orderTitle;
+
+    private String raterName;
+
+    private String executorName;
 
     public Long getRatingId()
     {
@@ -91,5 +102,45 @@ public class BizOrderRating
     public void setCreateTime(Date createTime)
     {
         this.createTime = createTime;
+    }
+
+    public String getOrderNo()
+    {
+        return orderNo;
+    }
+
+    public void setOrderNo(String orderNo)
+    {
+        this.orderNo = orderNo;
+    }
+
+    public String getOrderTitle()
+    {
+        return orderTitle;
+    }
+
+    public void setOrderTitle(String orderTitle)
+    {
+        this.orderTitle = orderTitle;
+    }
+
+    public String getRaterName()
+    {
+        return raterName;
+    }
+
+    public void setRaterName(String raterName)
+    {
+        this.raterName = raterName;
+    }
+
+    public String getExecutorName()
+    {
+        return executorName;
+    }
+
+    public void setExecutorName(String executorName)
+    {
+        this.executorName = executorName;
     }
 }
