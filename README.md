@@ -30,6 +30,7 @@ mysql -u iwip -p iwip_manajemen < sql/biz_order.sql
 mysql -u iwip -p iwip_manajemen < sql/backpacker_auth.sql
 mysql -u iwip -p iwip_manajemen < sql/backpacker_unify.sql
 mysql -u iwip -p iwip_manajemen < sql/backpacker_coins.sql
+mysql -u iwip -p iwip_manajemen < sql/backpacker_reputation.sql
 ```
 
 ## Menjalankan
