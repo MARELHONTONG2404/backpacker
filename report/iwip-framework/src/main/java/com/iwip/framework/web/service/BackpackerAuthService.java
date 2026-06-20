@@ -10,6 +10,7 @@ import com.iwip.common.core.domain.model.BackpackerRegisterBody;
 import com.iwip.common.utils.DateUtils;
 import com.iwip.common.utils.SecurityUtils;
 import com.iwip.common.utils.StringUtils;
+import com.iwip.system.service.IBackpackerCoinService;
 import com.iwip.system.service.ISysUserService;
 
 /**
@@ -19,9 +20,13 @@ import com.iwip.system.service.ISysUserService;
 public class BackpackerAuthService
 {
     private static final Long BACKPACKER_ROLE_ID = 3L;
+    private static final int PHONENUMBER_MAX_LENGTH = 20;
 
     @Autowired
     private ISysUserService userService;
+
+    @Autowired
+    private IBackpackerCoinService backpackerCoinService;
 
     @Autowired
     private SysLoginService loginService;
@@ -45,6 +50,10 @@ public class BackpackerAuthService
 
         if (StringUtils.isNotEmpty(phonenumber))
         {
+            if (phonenumber.length() > PHONENUMBER_MAX_LENGTH)
+            {
+                throw new IllegalArgumentException("Nomor telepon maksimal 20 karakter");
+            }
             SysUser phoneCheck = new SysUser();
             phoneCheck.setPhonenumber(phonenumber);
             if (!userService.checkPhoneUnique(phoneCheck))
@@ -67,13 +76,15 @@ public class BackpackerAuthService
             throw new IllegalStateException("Registrasi gagal");
         }
 
+        backpackerCoinService.grantRegisterBonus(user.getUserId());
+
         user.setPassword(null);
         return user;
     }
 
-    public String login(String username, String password)
+    public String login(String username, String password, String code, String uuid)
     {
-        return loginService.loginWithoutCaptcha(username, password);
+        return loginService.login(username, password, code, uuid);
     }
 
     private void validateRegisterInput(String username, String password)

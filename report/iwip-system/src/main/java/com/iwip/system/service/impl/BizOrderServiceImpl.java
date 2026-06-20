@@ -15,6 +15,7 @@ import com.iwip.common.utils.StringUtils;
 import com.iwip.system.domain.BizOrder;
 import com.iwip.system.domain.BizOrderLog;
 import com.iwip.system.mapper.BizOrderMapper;
+import com.iwip.system.service.IBackpackerCoinService;
 import com.iwip.system.service.IBizOrderService;
 
 /**
@@ -25,6 +26,9 @@ public class BizOrderServiceImpl implements IBizOrderService
 {
     @Autowired
     private BizOrderMapper bizOrderMapper;
+
+    @Autowired
+    private IBackpackerCoinService backpackerCoinService;
 
     @Override
     public BizOrder selectBizOrderById(Long orderId)
@@ -112,6 +116,8 @@ public class BizOrderServiceImpl implements IBizOrderService
         {
             throw new ServiceException("Hanya pesanan berstatus DRAFT yang dapat dipublikasikan");
         }
+
+        backpackerCoinService.chargePublishFee(creatorId, orderId);
 
         BizOrder update = new BizOrder();
         update.setOrderId(orderId);
