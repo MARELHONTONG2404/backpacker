@@ -34,5 +34,11 @@ export default {
   delta: 'Perubahan',
   scoreAfter: 'Skor Akhir',
   ratingScore: 'Skor',
-  ratingComment: 'Komentar'
+  ratingComment: 'Komentar',
+  gamificationSection: 'Gamifikasi Backpacker',
+  adjustCoins: 'Sesuaikan Koin',
+  adjustReputation: 'Sesuaikan Reputasi',
+  adjustCoinsHint: 'Positif = tambah koin, negatif = kurangi koin',
+  adjustReputationHint: 'Positif = tambah reputasi, negatif = kurangi reputasi',
+  adjustSuccess: 'Penyesuaian berhasil disimpan'
 }

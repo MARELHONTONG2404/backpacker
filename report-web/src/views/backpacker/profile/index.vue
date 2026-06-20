@@ -83,7 +83,41 @@
         <el-descriptions-item :label="t('backpacker.lastCheckin')">{{ detail.lastCheckinDate || '-' }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
+        <el-button @click="openAdjustCoins = true" v-hasPermi="['backpacker:profile:adjust']">{{ t('backpacker.adjustCoins') }}</el-button>
+        <el-button @click="openAdjustReputation = true" v-hasPermi="['backpacker:profile:adjust']">{{ t('backpacker.adjustReputation') }}</el-button>
         <el-button @click="open = false">{{ t('common.close') }}</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog :title="t('backpacker.adjustCoins')" v-model="openAdjustCoins" width="420px" append-to-body>
+      <el-form label-width="120px">
+        <el-form-item :label="t('backpacker.copperCoins')">
+          <el-input-number v-model="adjustCoinsForm.amount" :step="1" />
+          <div class="form-hint">{{ t('backpacker.adjustCoinsHint') }}</div>
+        </el-form-item>
+        <el-form-item :label="t('common.remark')">
+          <el-input v-model="adjustCoinsForm.remark" type="textarea" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="openAdjustCoins = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="submitAdjustCoins">{{ t('common.confirm') }}</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog :title="t('backpacker.adjustReputation')" v-model="openAdjustReputation" width="420px" append-to-body>
+      <el-form label-width="120px">
+        <el-form-item :label="t('backpacker.reputationScore')">
+          <el-input-number v-model="adjustReputationForm.delta" :step="1" />
+          <div class="form-hint">{{ t('backpacker.adjustReputationHint') }}</div>
+        </el-form-item>
+        <el-form-item :label="t('common.remark')">
+          <el-input v-model="adjustReputationForm.remark" type="textarea" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="openAdjustReputation = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="submitAdjustReputation">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -91,7 +125,7 @@
 
 <script setup name="BackpackerProfileList">
 import { useI18n } from 'vue-i18n'
-import { listProfile, getProfile, getGamificationStats } from '@/api/backpacker/profile'
+import { listProfile, getProfile, getGamificationStats, adjustCoins, adjustReputation } from '@/api/backpacker/profile'
 
 const { t } = useI18n()
 const { proxy } = getCurrentInstance()
@@ -100,6 +134,10 @@ const profileList = ref([])
 const detail = ref(null)
 const stats = ref({})
 const open = ref(false)
+const openAdjustCoins = ref(false)
+const openAdjustReputation = ref(false)
+const adjustCoinsForm = ref({ amount: 0, remark: '' })
+const adjustReputationForm = ref({ delta: 0, remark: '' })
 const loading = ref(true)
 const showSearch = ref(true)
 const total = ref(0)
@@ -139,7 +177,39 @@ function resetQuery() {
 function handleDetail(row) {
   getProfile(row.userId).then(response => {
     detail.value = response.data
+    adjustCoinsForm.value = { amount: 0, remark: '' }
+    adjustReputationForm.value = { delta: 0, remark: '' }
     open.value = true
+  })
+}
+
+function submitAdjustCoins() {
+  if (!detail.value?.userId) return
+  adjustCoins({
+    userId: detail.value.userId,
+    amount: adjustCoinsForm.value.amount,
+    remark: adjustCoinsForm.value.remark
+  }).then(() => {
+    proxy.$modal.msgSuccess(t('backpacker.adjustSuccess'))
+    openAdjustCoins.value = false
+    getProfile(detail.value.userId).then(response => { detail.value = response.data })
+    getList()
+    loadStats()
+  })
+}
+
+function submitAdjustReputation() {
+  if (!detail.value?.userId) return
+  adjustReputation({
+    userId: detail.value.userId,
+    delta: adjustReputationForm.value.delta,
+    remark: adjustReputationForm.value.remark
+  }).then(() => {
+    proxy.$modal.msgSuccess(t('backpacker.adjustSuccess'))
+    openAdjustReputation.value = false
+    getProfile(detail.value.userId).then(response => { detail.value = response.data })
+    getList()
+    loadStats()
   })
 }
 
@@ -159,5 +229,10 @@ getList()
 }
 .text-danger {
   color: #f56c6c;
+}
+.form-hint {
+  color: #909399;
+  font-size: 12px;
+  margin-top: 6px;
 }
 </style>

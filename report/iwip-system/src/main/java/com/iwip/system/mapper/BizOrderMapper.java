@@ -1,6 +1,7 @@
 package com.iwip.system.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.iwip.system.domain.BizOrder;
 import com.iwip.system.domain.BizOrderLog;
 
@@ -40,6 +41,8 @@ public interface BizOrderMapper
     int cancelBizOrder(BizOrder order);
 
     int abandonBizOrder(BizOrder order);
+
+    int expireStalePublishedOrders(@Param("days") int days);
 
     int insertBizOrderLog(BizOrderLog log);
 }

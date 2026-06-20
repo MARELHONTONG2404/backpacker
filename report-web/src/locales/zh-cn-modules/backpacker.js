@@ -34,5 +34,11 @@ export default {
   delta: '变动',
   scoreAfter: '变动后分数',
   ratingScore: '评分',
-  ratingComment: '评论'
+  ratingComment: '评论',
+  gamificationSection: 'Backpacker游戏化统计',
+  adjustCoins: '调整铜币',
+  adjustReputation: '调整信誉',
+  adjustCoinsHint: '正数增加，负数减少',
+  adjustReputationHint: '正数增加，负数减少',
+  adjustSuccess: '调整已保存'
 }

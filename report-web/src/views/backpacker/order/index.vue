@@ -80,6 +80,10 @@
         <el-descriptions-item :label="t('backpacker.publishedAt')">{{ parseTime(detail.publishedAt) || '-' }}</el-descriptions-item>
         <el-descriptions-item :label="t('backpacker.takenAt')">{{ parseTime(detail.takenAt) || '-' }}</el-descriptions-item>
         <el-descriptions-item :label="t('backpacker.completedAt')">{{ parseTime(detail.completedAt) || '-' }}</el-descriptions-item>
+        <el-descriptions-item v-if="detail.ratingScore" :label="t('backpacker.ratingScore')">
+          {{ detail.ratingScore }}/5
+          <span v-if="detail.ratingComment"> — {{ detail.ratingComment }}</span>
+        </el-descriptions-item>
         <el-descriptions-item v-if="detail.cancelReason" :label="t('backpacker.cancelReason')">{{ detail.cancelReason }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>

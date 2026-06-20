@@ -5,6 +5,9 @@ class AuthStorage {
   static const _userIdKey = 'backpacker_user_id';
   static const _usernameKey = 'backpacker_username';
   static const _nickNameKey = 'backpacker_nick_name';
+  static const _rememberMeKey = 'backpacker_remember_me';
+  static const _rememberUsernameKey = 'backpacker_remember_username';
+  static const _rememberPasswordKey = 'backpacker_remember_password';
 
   Future<void> saveSession({
     required String token,
@@ -39,11 +42,42 @@ class AuthStorage {
     return prefs.getString(_nickNameKey);
   }
 
+  Future<void> updateNickName(String nickName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_nickNameKey, nickName);
+  }
+
   Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userIdKey);
     await prefs.remove(_usernameKey);
     await prefs.remove(_nickNameKey);
+  }
+
+  Future<void> saveRememberMe({
+    required bool rememberMe,
+    required String username,
+    required String password,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_rememberMeKey, rememberMe);
+    if (rememberMe) {
+      await prefs.setString(_rememberUsernameKey, username);
+      await prefs.setString(_rememberPasswordKey, password);
+    } else {
+      await prefs.remove(_rememberUsernameKey);
+      await prefs.remove(_rememberPasswordKey);
+    }
+  }
+
+  Future<({bool rememberMe, String username, String password})> loadRememberMe() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rememberMe = prefs.getBool(_rememberMeKey) ?? false;
+    return (
+      rememberMe: rememberMe,
+      username: prefs.getString(_rememberUsernameKey) ?? '',
+      password: prefs.getString(_rememberPasswordKey) ?? '',
+    );
   }
 }

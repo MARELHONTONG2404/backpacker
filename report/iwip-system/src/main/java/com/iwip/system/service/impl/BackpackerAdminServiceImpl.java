@@ -13,6 +13,7 @@ import com.iwip.system.domain.BizReputationLog;
 import com.iwip.system.mapper.BizBackpackerProfileMapper;
 import com.iwip.system.mapper.BizOrderRatingMapper;
 import com.iwip.system.service.IBackpackerAdminService;
+import com.iwip.system.service.IBackpackerCoinService;
 
 /**
  * Implementasi monitoring admin Backpacker.
@@ -25,6 +26,9 @@ public class BackpackerAdminServiceImpl implements IBackpackerAdminService
 
     @Autowired
     private BizOrderRatingMapper ratingMapper;
+
+    @Autowired
+    private IBackpackerCoinService backpackerCoinService;
 
     @Override
     public List<BizBackpackerProfile> selectProfileList(BizBackpackerProfile profile)
@@ -87,5 +91,25 @@ public class BackpackerAdminServiceImpl implements IBackpackerAdminService
         stats.put("avgReputation", avgReputation);
         stats.put("totalRatings", ratingMapper.selectRatingList(new BizOrderRating()).size());
         return stats;
+    }
+
+    @Override
+    public BizBackpackerProfile adjustCoins(Long userId, Integer amount, String remark, String operator)
+    {
+        if (userId == null || amount == null)
+        {
+            throw new ServiceException("User ID dan jumlah koin wajib diisi");
+        }
+        return backpackerCoinService.adminAdjustCoins(userId, amount, remark, operator);
+    }
+
+    @Override
+    public BizBackpackerProfile adjustReputation(Long userId, Integer delta, String remark, String operator)
+    {
+        if (userId == null || delta == null)
+        {
+            throw new ServiceException("User ID dan perubahan reputasi wajib diisi");
+        }
+        return backpackerCoinService.adminAdjustReputation(userId, delta, remark, operator);
     }
 }

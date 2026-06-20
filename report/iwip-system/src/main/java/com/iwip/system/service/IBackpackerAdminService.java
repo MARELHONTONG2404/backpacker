@@ -23,4 +23,8 @@ public interface IBackpackerAdminService
     List<BizOrderRating> selectRatingList(BizOrderRating rating);
 
     Map<String, Object> selectGamificationStats();
+
+    BizBackpackerProfile adjustCoins(Long userId, Integer amount, String remark, String operator);
+
+    BizBackpackerProfile adjustReputation(Long userId, Integer delta, String remark, String operator);
 }

@@ -21,3 +21,19 @@ export function getGamificationStats() {
     method: 'get'
   })
 }
+
+export function adjustCoins(data) {
+  return request({
+    url: '/backpacker/profile/adjust-coins',
+    method: 'post',
+    data
+  })
+}
+
+export function adjustReputation(data) {
+  return request({
+    url: '/backpacker/profile/adjust-reputation',
+    method: 'post',
+    data
+  })
+}

@@ -18,7 +18,9 @@ import com.iwip.system.domain.BizOrderRating;
 import com.iwip.system.mapper.BizOrderMapper;
 import com.iwip.system.mapper.BizOrderRatingMapper;
 import com.iwip.system.service.IBackpackerCoinService;
+import com.iwip.system.service.IBackpackerNotificationService;
 import com.iwip.system.service.IBizOrderService;
+import com.iwip.system.domain.BizBackpackerNotification;
 
 /**
  * Pesanan Backpacker service implementation.
@@ -34,6 +36,9 @@ public class BizOrderServiceImpl implements IBizOrderService
 
     @Autowired
     private IBackpackerCoinService backpackerCoinService;
+
+    @Autowired
+    private IBackpackerNotificationService notificationService;
 
     @Override
     public BizOrder selectBizOrderById(Long orderId)
@@ -187,6 +192,11 @@ public class BizOrderServiceImpl implements IBizOrderService
         }
 
         insertOrderLog(orderId, BizOrder.STATUS_PUBLISHED, BizOrder.STATUS_TAKEN, executorId, "Tugas diambil pelaksana");
+        notificationService.notifyUser(existing.getCreatorId(),
+                "Tugas diambil",
+                "Tugas \"" + existing.getTitle() + "\" telah diambil pelaksana.",
+                BizBackpackerNotification.TYPE_ORDER_TAKEN,
+                orderId);
         return bizOrderMapper.selectBizOrderById(orderId);
     }
 
@@ -230,7 +240,20 @@ public class BizOrderServiceImpl implements IBizOrderService
 
         insertOrderLog(orderId, BizOrder.STATUS_IN_PROGRESS, BizOrder.STATUS_COMPLETED, executorId, "Tugas selesai");
         backpackerCoinService.rewardTaskCompletion(executorId, orderId);
-        return selectBizOrderById(orderId);
+        BizOrder completed = selectBizOrderById(orderId);
+        notificationService.notifyUser(completed.getCreatorId(),
+                "Tugas selesai",
+                "Tugas \"" + completed.getTitle() + "\" selesai. Silakan beri penilaian.",
+                BizBackpackerNotification.TYPE_ORDER_COMPLETED,
+                orderId);
+        notificationService.notifyUser(executorId,
+                "Reward diterima",
+                "Anda mendapat +" + com.iwip.common.constant.BackpackerConstants.TASK_REWARD_COINS
+                        + " koin dan +" + com.iwip.common.constant.BackpackerConstants.REPUTATION_TASK_COMPLETE
+                        + " reputasi.",
+                BizBackpackerNotification.TYPE_ORDER_COMPLETED,
+                orderId);
+        return completed;
     }
 
     @Override
@@ -348,6 +371,11 @@ public class BizOrderServiceImpl implements IBizOrderService
         }
 
         backpackerCoinService.applyRatingReputation(existing.getExecutorId(), score, orderId);
+        notificationService.notifyUser(existing.getExecutorId(),
+                "Penilaian diterima",
+                "Pembuat tugas memberi skor " + score + "/5 untuk tugas \"" + existing.getTitle() + "\".",
+                BizBackpackerNotification.TYPE_ORDER_RATED,
+                orderId);
         return selectBizOrderById(orderId);
     }
 

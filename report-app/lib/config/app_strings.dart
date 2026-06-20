@@ -41,6 +41,7 @@ class AppStrings {
   static const tabAvailable = 'Tersedia';
   static const tabMine = 'Pesanan Saya';
   static const tabCreate = 'Buat Tugas';
+  static const tabProfile = 'Profil';
 
   static const copperCoins = 'Koin Tembaga';
   static const checkin = 'Check-in';

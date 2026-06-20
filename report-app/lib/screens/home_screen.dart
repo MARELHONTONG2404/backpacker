@@ -11,6 +11,7 @@ import '../widgets/order_action_handler.dart';
 import '../widgets/order_card.dart';
 import 'login_screen.dart';
 import 'order_detail_screen.dart';
+import 'profile_tab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.api});
@@ -27,7 +28,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _nickName;
   int? _userId;
   BackpackerProfile? _coinProfile;
-  bool _checkinLoading = false;
 
   @override
   void initState() {
@@ -65,20 +65,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _checkin() async {
-    if (_coinProfile != null && !_coinProfile!.canCheckinToday) return;
-    setState(() => _checkinLoading = true);
-    try {
-      await widget.api.dailyCheckin();
-      await _loadProfile();
-      if (mounted) showAppMessage(context, 'Check-in berhasil! +${_coinProfile?.dailyCheckinReward ?? 2} koin');
-    } on ApiException catch (error) {
-      if (mounted) showAppMessage(context, error.message);
-    } finally {
-      if (mounted) setState(() => _checkinLoading = false);
-    }
-  }
-
   Future<void> _logout() async {
     await widget.api.logout();
     if (!mounted) return;
@@ -105,8 +91,10 @@ class _HomeScreenState extends State<HomeScreen> {
         return 'Tugas Tersedia';
       case 1:
         return 'Pesanan Saya';
-      default:
+      case 2:
         return 'Buat Tugas';
+      default:
+        return 'Profil Saya';
     }
   }
 
@@ -154,16 +142,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           IconButton(
-            onPressed: (_coinProfile?.canCheckinToday ?? false) && !_checkinLoading ? _checkin : null,
-            icon: _checkinLoading
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : Icon(
-                    Icons.calendar_today_outlined,
-                    color: (_coinProfile?.canCheckinToday ?? false) ? AppColors.primary : AppColors.textSecondary,
-                  ),
-            tooltip: (_coinProfile?.canCheckinToday ?? false) ? AppStrings.checkin : AppStrings.checkinDone,
-          ),
-          IconButton(
             onPressed: _logout,
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Keluar',
@@ -194,6 +172,12 @@ class _HomeScreenState extends State<HomeScreen> {
               setState(() => _tabIndex = 1);
             },
           ),
+          ProfileTab(
+            api: widget.api,
+            coinProfile: _coinProfile,
+            onProfileChanged: _loadProfile,
+            onLogout: _logout,
+          ),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -215,6 +199,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.add_circle_outline),
             selectedIcon: Icon(Icons.add_circle),
             label: AppStrings.tabCreate,
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: AppStrings.tabProfile,
           ),
         ],
       ),
@@ -244,6 +233,8 @@ class _AvailableTab extends StatefulWidget {
 class _AvailableTabState extends State<_AvailableTab> {
   bool _loading = true;
   List<OrderItem> _orders = [];
+  final _titleController = TextEditingController();
+  String? _category;
 
   @override
   void initState() {
@@ -251,10 +242,19 @@ class _AvailableTabState extends State<_AvailableTab> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final orders = await widget.api.fetchAvailableOrders();
+      final orders = await widget.api.fetchAvailableOrders(
+        title: _titleController.text.trim(),
+        category: _category,
+      );
       if (mounted) setState(() => _orders = orders);
     } on ApiException catch (error) {
       if (mounted) showAppMessage(context, error.message);
@@ -272,6 +272,41 @@ class _AvailableTabState extends State<_AvailableTab> {
     }
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    hintText: 'Cari judul tugas...',
+                    prefixIcon: Icon(Icons.search),
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) => _load(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              DropdownButton<String?>(
+                value: _category,
+                hint: const Text('Kategori'),
+                items: const [
+                  DropdownMenuItem(value: null, child: Text('Semua')),
+                  DropdownMenuItem(value: 'general', child: Text('Umum')),
+                  DropdownMenuItem(value: 'delivery', child: Text('Antar')),
+                  DropdownMenuItem(value: 'helper', child: Text('Bantuan')),
+                  DropdownMenuItem(value: 'tech', child: Text('Teknisi')),
+                  DropdownMenuItem(value: 'errands', child: Text('Errands')),
+                ],
+                onChanged: (value) {
+                  setState(() => _category = value);
+                  _load();
+                },
+              ),
+            ],
+          ),
+        ),
         if (widget.coinProfile != null && !widget.coinProfile!.canTakeTask)
           MaterialBanner(
             content: Text(

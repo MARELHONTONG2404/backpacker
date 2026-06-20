@@ -30,4 +30,8 @@ public interface IBackpackerCoinService
     void applyRatingReputation(Long executorId, int score, Long orderId);
 
     void penaltyTaskAbandoned(Long executorId, Long orderId);
+
+    BizBackpackerProfile adminAdjustCoins(Long userId, int amount, String remark, String operator);
+
+    BizBackpackerProfile adminAdjustReputation(Long userId, int delta, String remark, String operator);
 }

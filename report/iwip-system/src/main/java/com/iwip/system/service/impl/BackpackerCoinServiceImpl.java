@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.iwip.common.constant.BackpackerConstants;
 import com.iwip.common.exception.ServiceException;
 import com.iwip.common.utils.DateUtils;
+import com.iwip.common.utils.StringUtils;
 import com.iwip.system.domain.BizBackpackerProfile;
 import com.iwip.system.domain.BizCoinTransaction;
 import com.iwip.system.domain.BizReputationLog;
@@ -170,6 +171,53 @@ public class BackpackerCoinServiceImpl implements IBackpackerCoinService
         adjustReputation(executorId, BackpackerConstants.REPUTATION_TASK_FAILED,
                 BackpackerConstants.REP_TASK_FAILED, orderId, "Tugas dibatalkan oleh pelaksana");
         profileMapper.incrementFailedTasks(executorId);
+    }
+
+    @Override
+    @Transactional
+    public BizBackpackerProfile adminAdjustCoins(Long userId, int amount, String remark, String operator)
+    {
+        if (amount == 0)
+        {
+            throw new ServiceException("Jumlah penyesuaian koin tidak boleh nol");
+        }
+        getOrCreateProfile(userId);
+        String note = StringUtils.isNotEmpty(remark) ? remark : "Penyesuaian admin oleh " + operator;
+        if (amount > 0)
+        {
+            creditCoins(userId, amount, BackpackerConstants.TX_ADMIN_ADJUST, null, note);
+        }
+        else
+        {
+            int debit = Math.abs(amount);
+            BizBackpackerProfile profile = profileMapper.selectProfileByUserId(userId);
+            if (profile.getCopperCoins() < debit)
+            {
+                throw new ServiceException("Saldo koin tidak cukup untuk pengurangan");
+            }
+            if (profileMapper.deductCoins(userId, debit) <= 0)
+            {
+                throw new ServiceException("Gagal mengurangi koin");
+            }
+            BizBackpackerProfile updated = profileMapper.selectProfileByUserId(userId);
+            insertTransaction(userId, -debit, updated.getCopperCoins(),
+                    BackpackerConstants.TX_ADMIN_ADJUST, null, note);
+        }
+        return profileMapper.selectProfileByUserId(userId);
+    }
+
+    @Override
+    @Transactional
+    public BizBackpackerProfile adminAdjustReputation(Long userId, int delta, String remark, String operator)
+    {
+        if (delta == 0)
+        {
+            throw new ServiceException("Perubahan reputasi tidak boleh nol");
+        }
+        getOrCreateProfile(userId);
+        String note = StringUtils.isNotEmpty(remark) ? remark : "Penyesuaian admin oleh " + operator;
+        adjustReputation(userId, delta, BackpackerConstants.REP_ADMIN_ADJUST, null, note);
+        return profileMapper.selectProfileByUserId(userId);
     }
 
     private void adjustReputation(Long userId, int delta, String reason, Long refId, String remark)

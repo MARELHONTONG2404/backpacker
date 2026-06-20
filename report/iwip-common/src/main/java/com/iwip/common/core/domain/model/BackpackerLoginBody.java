@@ -1,13 +1,17 @@
 package com.iwip.common.core.domain.model;
 
 /**
- * Login pengguna Backpacker (mobile, tanpa captcha).
+ * Login pengguna Backpacker (mobile).
  */
 public class BackpackerLoginBody
 {
     private String username;
 
     private String password;
+
+    private String code;
+
+    private String uuid;
 
     public String getUsername()
     {
@@ -27,5 +31,25 @@ public class BackpackerLoginBody
     public void setPassword(String password)
     {
         this.password = password;
+    }
+
+    public String getCode()
+    {
+        return code;
+    }
+
+    public void setCode(String code)
+    {
+        this.code = code;
+    }
+
+    public String getUuid()
+    {
+        return uuid;
+    }
+
+    public void setUuid(String uuid)
+    {
+        this.uuid = uuid;
     }
 }

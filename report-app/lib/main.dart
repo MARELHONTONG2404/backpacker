@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'config/app_strings.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/api_service.dart';
 import 'services/auth_storage.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const BackpackerApp());
@@ -15,11 +17,9 @@ class BackpackerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Backpacker',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-        useMaterial3: true,
-      ),
+      title: AppStrings.appName,
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
       home: const SplashScreen(),
     );
   }
@@ -43,6 +43,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final storage = AuthStorage();
     final api = ApiService(storage);
     final token = await storage.getToken();
+    await Future<void>.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -53,8 +54,53 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset('assets/images/login-background.jpg', fit: BoxFit.cover),
+          Container(color: Colors.black.withValues(alpha: 0.35)),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                  ),
+                  child: const Icon(Icons.backpack_outlined, size: 44, color: Colors.white),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  AppStrings.appName,
+                  style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  AppStrings.appSubtitle,
+                  style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  AppStrings.appConcept,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.88), fontSize: 12),
+                ),
+                const SizedBox(height: 28),
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

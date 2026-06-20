@@ -31,6 +31,9 @@ public final class BackpackerConstants
     public static final int REPUTATION_MIN = 0;
     public static final int REPUTATION_MAX = 200;
 
+    /** Hari sebelum tugas PUBLISHED otomatis EXPIRED. */
+    public static final int ORDER_EXPIRE_DAYS = 7;
+
     /** Perubahan reputasi per peristiwa. */
     public static final int REPUTATION_TASK_COMPLETE = 5;
     public static final int REPUTATION_TASK_FAILED = -10;
@@ -45,8 +48,10 @@ public final class BackpackerConstants
     public static final String TX_DAILY_CHECKIN = "DAILY_CHECKIN";
     public static final String TX_PUBLISH_FEE = "PUBLISH_FEE";
     public static final String TX_TASK_REWARD = "TASK_REWARD";
+    public static final String TX_ADMIN_ADJUST = "ADMIN_ADJUST";
 
     public static final String REP_TASK_COMPLETE = "TASK_COMPLETE";
+    public static final String REP_ADMIN_ADJUST = "ADMIN_ADJUST";
     public static final String REP_TASK_FAILED = "TASK_FAILED";
     public static final String REP_BAD_RATING = "BAD_RATING";
     public static final String REP_GOOD_RATING = "GOOD_RATING";
