@@ -203,7 +203,20 @@ class ApiService {
     final response = await http.post(
       uri,
       headers: await _headers(auth: true),
-      body: action == 'cancel' ? jsonEncode({'cancelReason': cancelReason ?? ''}) : null,
+      body: (action == 'cancel' || action == 'abandon')
+          ? jsonEncode({'cancelReason': cancelReason ?? ''})
+          : null,
+    );
+    final data = _decodeBody(response);
+    _ensureSuccess(data);
+    return OrderItem.fromJson(data['data'] as Map<String, dynamic>);
+  }
+
+  Future<OrderItem> rateOrder(int orderId, {required int score, String? comment}) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/backpacker/orders/$orderId/rate'),
+      headers: await _headers(auth: true),
+      body: jsonEncode({'score': score, 'comment': comment ?? ''}),
     );
     final data = _decodeBody(response);
     _ensureSuccess(data);

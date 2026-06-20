@@ -13,7 +13,7 @@ class OrderActionHandler {
   }) async {
     String? cancelReason;
     if (action.needsCancelReason) {
-      cancelReason = await _askCancelReason(context);
+      cancelReason = await _askCancelReason(context, action);
       if (cancelReason == null) return null;
     } else {
       final confirmed = await _confirm(context, action);
@@ -57,25 +57,26 @@ class OrderActionHandler {
     return result ?? false;
   }
 
-  static Future<String?> _askCancelReason(BuildContext context) async {
+  static Future<String?> _askCancelReason(BuildContext context, OrderAction action) async {
     final controller = TextEditingController();
+    final isAbandon = action == OrderAction.abandon;
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Batalkan pesanan'),
+        title: Text(isAbandon ? 'Lepas tugas' : 'Batalkan pesanan'),
         content: TextField(
           controller: controller,
           maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Alasan pembatalan (opsional)',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: isAbandon ? 'Alasan melepas tugas (opsional)' : 'Alasan pembatalan (opsional)',
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Batalkan pesanan'),
+            child: Text(isAbandon ? 'Lepas tugas' : 'Batalkan pesanan'),
           ),
         ],
       ),
@@ -95,7 +96,9 @@ class OrderActionHandler {
       case OrderAction.start:
         return 'Tugas mulai dikerjakan';
       case OrderAction.complete:
-        return 'Tugas selesai!';
+        return 'Tugas selesai! +3 koin, +5 reputasi';
+      case OrderAction.abandon:
+        return 'Tugas dilepas. Reputasi berkurang.';
     }
   }
 }
@@ -145,24 +148,5 @@ class OrderActionButtons extends StatelessWidget {
   Future<void> _handle(BuildContext context, OrderAction action) async {
     final updated = await OrderActionHandler.run(context, api: api, order: order, action: action);
     if (updated != null) onChanged();
-  }
-}
-
-Color statusColor(String status) {
-  switch (status) {
-    case 'DRAFT':
-      return Colors.blueGrey;
-    case 'PUBLISHED':
-      return Colors.blue;
-    case 'TAKEN':
-      return Colors.orange;
-    case 'IN_PROGRESS':
-      return Colors.deepOrange;
-    case 'COMPLETED':
-      return Colors.green;
-    case 'CANCELLED':
-      return Colors.red;
-    default:
-      return Colors.grey;
   }
 }

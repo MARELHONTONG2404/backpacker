@@ -50,4 +50,11 @@ class AppStrings {
       'Saldo koin tidak cukup. Check-in harian atau selesaikan tugas untuk mendapat koin.';
   static const publishConfirm =
       'Publikasikan tugas ke marketplace? Biaya: {fee} koin tembaga.';
+
+  static const reputation = 'Reputasi';
+  static const reputationLow =
+      'Reputasi Anda terlalu rendah untuk menerima tugas baru.';
+  static const rateTask = 'Beri Penilaian';
+  static const rateSubmitted = 'Penilaian berhasil disimpan';
+  static const ratingLabel = 'Penilaian Pelaksana';
 }

@@ -13,6 +13,8 @@ class OrderItem {
     this.creatorName,
     this.executorName,
     this.cancelReason,
+    this.ratingScore,
+    this.ratingComment,
   });
 
   final int orderId;
@@ -28,6 +30,8 @@ class OrderItem {
   final String? creatorName;
   final String? executorName;
   final String? cancelReason;
+  final int? ratingScore;
+  final String? ratingComment;
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
@@ -44,8 +48,15 @@ class OrderItem {
       creatorName: json['creatorName'] as String?,
       executorName: json['executorName'] as String?,
       cancelReason: json['cancelReason'] as String?,
+      ratingScore: json['ratingScore'] as int?,
+      ratingComment: json['ratingComment'] as String?,
     );
   }
+
+  bool get isRated => ratingScore != null;
+
+  bool canRate(int? userId) =>
+      userId != null && isCreator(userId) && status == 'COMPLETED' && !isRated;
 
   bool isCreator(int? userId) => userId != null && creatorId == userId;
 
@@ -107,12 +118,12 @@ class OrderItem {
         return [];
       case 'TAKEN':
         if (isExecutor(userId)) {
-          return [OrderAction.start];
+          return [OrderAction.start, OrderAction.abandon];
         }
         return [];
       case 'IN_PROGRESS':
         if (isExecutor(userId)) {
-          return [OrderAction.complete];
+          return [OrderAction.complete, OrderAction.abandon];
         }
         return [];
       default:
@@ -134,7 +145,8 @@ enum OrderAction {
   cancel('cancel', 'Batalkan', 'Batalkan pesanan ini?'),
   take('take', 'Ambil Tugas', 'Ambil tugas ini?'),
   start('start', 'Mulai Kerjakan', 'Mulai mengerjakan tugas?'),
-  complete('complete', 'Selesai', 'Tandai tugas sebagai selesai?');
+  complete('complete', 'Selesai', 'Tandai tugas sebagai selesai? Anda akan mendapat +3 koin dan +5 reputasi.'),
+  abandon('abandon', 'Lepas Tugas', 'Lepas tugas ini? Reputasi Anda akan berkurang.');
 
   const OrderAction(this.apiKey, this.label, this.confirmMessage);
 
@@ -142,7 +154,7 @@ enum OrderAction {
   final String label;
   final String confirmMessage;
 
-  bool get needsCancelReason => this == OrderAction.cancel;
+  bool get needsCancelReason => this == OrderAction.cancel || this == OrderAction.abandon;
 
   bool get isPrimary =>
       this == OrderAction.take || this == OrderAction.start || this == OrderAction.complete;

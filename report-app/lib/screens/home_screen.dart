@@ -132,10 +132,25 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_coinProfile != null)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Chip(
-                avatar: const Icon(Icons.monetization_on_outlined, size: 18, color: AppColors.primary),
-                label: Text('${_coinProfile!.copperCoins}'),
-                visualDensity: VisualDensity.compact,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Chip(
+                    avatar: const Icon(Icons.monetization_on_outlined, size: 18, color: AppColors.primary),
+                    label: Text('${_coinProfile!.copperCoins}'),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  const SizedBox(width: 4),
+                  Chip(
+                    avatar: Icon(
+                      Icons.star_rounded,
+                      size: 18,
+                      color: _coinProfile!.canTakeTask ? AppColors.secondary : Theme.of(context).colorScheme.error,
+                    ),
+                    label: Text('${_coinProfile!.reputationScore}'),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
               ),
             ),
           IconButton(
@@ -158,7 +173,13 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(
         index: _tabIndex,
         children: [
-          _AvailableTab(api: widget.api, userId: _userId, onTapOrder: _openDetail),
+          _AvailableTab(
+            api: widget.api,
+            userId: _userId,
+            coinProfile: _coinProfile,
+            onTapOrder: _openDetail,
+            onCoinsChanged: _loadProfile,
+          ),
           _MyOrdersTab(
             api: widget.api,
             userId: _userId,
@@ -202,11 +223,19 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _AvailableTab extends StatefulWidget {
-  const _AvailableTab({required this.api, required this.userId, required this.onTapOrder});
+  const _AvailableTab({
+    required this.api,
+    required this.userId,
+    required this.onTapOrder,
+    required this.onCoinsChanged,
+    this.coinProfile,
+  });
 
   final ApiService api;
   final int? userId;
   final ValueChanged<OrderItem> onTapOrder;
+  final VoidCallback onCoinsChanged;
+  final BackpackerProfile? coinProfile;
 
   @override
   State<_AvailableTab> createState() => _AvailableTabState();
@@ -241,33 +270,52 @@ class _AvailableTabState extends State<_AvailableTab> {
     if (_loading) {
       return const LoadingView(message: 'Memuat tugas tersedia...');
     }
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: _orders.isEmpty
-          ? const EmptyState(
-              icon: Icons.search_off_outlined,
-              title: 'Belum ada tugas tersedia',
-              subtitle: 'Tarik ke bawah untuk refresh atau buat tugas baru.',
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              itemCount: _orders.length,
-              itemBuilder: (context, index) {
-                final order = _orders[index];
-                return OrderCard(
-                  order: order,
-                  onTap: () => widget.onTapOrder(order),
-                  trailing: OrderActionButtons(
-                    order: order,
-                    api: widget.api,
-                    userId: widget.userId,
-                    marketplace: true,
-                    compact: true,
-                    onChanged: _load,
-                  ),
-                );
-              },
+    return Column(
+      children: [
+        if (widget.coinProfile != null && !widget.coinProfile!.canTakeTask)
+          MaterialBanner(
+            content: Text(
+              '${AppStrings.reputationLow} Minimum ${widget.coinProfile!.minReputationToTake} poin.',
             ),
+            leading: Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.error),
+            actions: [TextButton(onPressed: _load, child: const Text('Refresh'))],
+          ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _load,
+            child: _orders.isEmpty
+                ? ListView(
+                    children: const [
+                      SizedBox(height: 120),
+                      EmptyState(
+                        icon: Icons.search_off_outlined,
+                        title: 'Belum ada tugas tersedia',
+                        subtitle: 'Tarik ke bawah untuk refresh atau buat tugas baru.',
+                      ),
+                    ],
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    itemCount: _orders.length,
+                    itemBuilder: (context, index) {
+                      final order = _orders[index];
+                      return OrderCard(
+                        order: order,
+                        onTap: () => widget.onTapOrder(order),
+                        trailing: OrderActionButtons(
+                          order: order,
+                          api: widget.api,
+                          userId: widget.userId,
+                          marketplace: true,
+                          compact: true,
+                          onChanged: widget.onCoinsChanged,
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }
