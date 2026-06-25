@@ -13,6 +13,7 @@ import components from './zh-cn-modules/components'
 import crontab from './zh-cn-modules/crontab'
 import tool from './zh-cn-modules/tool'
 import backpacker from './zh-cn-modules/backpacker'
+import dict from './zh-cn-modules/dict'
 
 export default {
   common,
@@ -29,5 +30,6 @@ export default {
   components,
   crontab,
   tool,
-  backpacker
+  backpacker,
+  dict
 }

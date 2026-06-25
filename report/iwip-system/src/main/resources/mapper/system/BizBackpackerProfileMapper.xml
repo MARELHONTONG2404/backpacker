@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iwip.system.mapper.BizBackpackerProfileMapper">
+
+    <resultMap type="BizBackpackerProfile" id="ProfileResult">
+        <id     property="userId"           column="user_id"           />
+        <result property="copperCoins"      column="copper_coins"      />
+        <result property="reputationScore"  column="reputation_score"  />
+        <result property="lastCheckinDate"  column="last_checkin_date" />
+        <result property="completedTasks"   column="completed_tasks"   />
+        <result property="failedTasks"      column="failed_tasks"      />
+        <result property="createTime"       column="create_time"       />
+        <result property="updateTime"       column="update_time"       />
+        <result property="userName"         column="user_name"         />
+        <result property="nickName"         column="nick_name"         />
+        <result property="phonenumber"      column="phonenumber"       />
+    </resultMap>
+
+    <resultMap type="BizCoinTransaction" id="TransactionResult">
+        <id     property="transactionId" column="transaction_id" />
+        <result property="userId"        column="user_id"        />
+        <result property="amount"        column="amount"         />
+        <result property="balanceAfter"  column="balance_after"  />
+        <result property="txType"        column="tx_type"        />
+        <result property="refId"         column="ref_id"         />
+        <result property="remark"        column="remark"         />
+        <result property="createTime"    column="create_time"    />
+        <result property="userName"      column="user_name"      />
+        <result property="nickName"      column="nick_name"      />
+    </resultMap>
+
+    <resultMap type="BizReputationLog" id="ReputationLogResult">
+        <id     property="logId"       column="log_id"       />
+        <result property="userId"      column="user_id"      />
+        <result property="delta"       column="delta"        />
+        <result property="scoreAfter"  column="score_after"  />
+        <result property="reason"      column="reason"       />
+        <result property="refId"       column="ref_id"       />
+        <result property="remark"      column="remark"       />
+        <result property="createTime"  column="create_time"  />
+        <result property="userName"    column="user_name"    />
+        <result property="nickName"    column="nick_name"    />
+    </resultMap>
+
+    <select id="selectProfileByUserId" parameterType="Long" resultMap="ProfileResult">
+        select user_id, copper_coins, reputation_score, last_checkin_date,
+               completed_tasks, failed_tasks, create_time, update_time
+        from biz_backpacker_profile
+        where user_id = #{userId}
+    </select>
+
+    <insert id="insertProfile" parameterType="BizBackpackerProfile">
+        insert into biz_backpacker_profile (
+            user_id, copper_coins, reputation_score, last_checkin_date,
+            completed_tasks, failed_tasks, create_time, update_time
+        ) values (
+            #{userId}, #{copperCoins}, #{reputationScore}, #{lastCheckinDate},
+            #{completedTasks}, #{failedTasks}, #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <update id="addCoins">
+        update biz_backpacker_profile
+        set copper_coins = copper_coins + #{amount},
+            update_time = sysdate()
+        where user_id = #{userId}
+    </update>
+
+    <update id="deductCoins">
+        update biz_backpacker_profile
+        set copper_coins = copper_coins - #{amount},
+            update_time = sysdate()
+        where user_id = #{userId}
+          and copper_coins >= #{amount}
+    </update>
+
+    <update id="updateLastCheckinDate">
+        update biz_backpacker_profile
+        set last_checkin_date = #{checkinDate},
+            update_time = sysdate()
+        where user_id = #{userId}
+    </update>
+
+    <insert id="insertCoinTransaction" parameterType="BizCoinTransaction" useGeneratedKeys="true" keyProperty="transactionId">
+        insert into biz_coin_transaction (
+            user_id, amount, balance_after, tx_type, ref_id, remark, create_time
+        ) values (
+            #{userId}, #{amount}, #{balanceAfter}, #{txType}, #{refId}, #{remark}, #{createTime}
+        )
+    </insert>
+
+    <select id="selectRecentTransactions" resultMap="TransactionResult">
+        select transaction_id, user_id, amount, balance_after, tx_type, ref_id, remark, create_time
+        from biz_coin_transaction
+        where user_id = #{userId}
+        order by create_time desc
+        limit #{limit}
+    </select>
+
+    <select id="countCoinTransactionByRefAndType" resultType="int">
+        select count(*)
+        from biz_coin_transaction
+        where ref_id = #{refId}
+          and tx_type = #{txType}
+    </select>
+
+    <update id="adjustReputationScore">
+        update biz_backpacker_profile
+        set reputation_score = least(200, greatest(0, reputation_score + #{delta})),
+            update_time = sysdate()
+        where user_id = #{userId}
+    </update>
+
+    <update id="incrementCompletedTasks">
+        update biz_backpacker_profile
+        set completed_tasks = completed_tasks + 1,
+            update_time = sysdate()
+        where user_id = #{userId}
+    </update>
+
+    <update id="incrementFailedTasks">
+        update biz_backpacker_profile
+        set failed_tasks = failed_tasks + 1,
+            update_time = sysdate()
+        where user_id = #{userId}
+    </update>
+
+    <insert id="insertReputationLog" parameterType="BizReputationLog" useGeneratedKeys="true" keyProperty="logId">
+        insert into biz_reputation_log (user_id, delta, score_after, reason, ref_id, remark, create_time)
+        values (#{userId}, #{delta}, #{scoreAfter}, #{reason}, #{refId}, #{remark}, #{createTime})
+    </insert>
+
+    <select id="selectProfileList" parameterType="BizBackpackerProfile" resultMap="ProfileResult">
+        select p.user_id, p.copper_coins, p.reputation_score, p.last_checkin_date,
+               p.completed_tasks, p.failed_tasks, p.create_time, p.update_time,
+               u.user_name, u.nick_name, u.phonenumber
+        from biz_backpacker_profile p
+        inner join sys_user u on p.user_id = u.user_id
+        <where>
+            u.del_flag = '0'
+            <if test="userId != null">
+                and p.user_id = #{userId}
+            </if>
+            <if test="userName != null and userName != ''">
+                and u.user_name like concat('%', #{userName}, '%')
+            </if>
+            <if test="nickName != null and nickName != ''">
+                and u.nick_name like concat('%', #{nickName}, '%')
+            </if>
+            <if test="params.minReputation != null">
+                and p.reputation_score &gt;= #{params.minReputation}
+            </if>
+            <if test="params.maxReputation != null">
+                and p.reputation_score &lt;= #{params.maxReputation}
+            </if>
+        </where>
+        order by p.update_time desc
+    </select>
+
+    <select id="selectCoinTransactionList" parameterType="BizCoinTransaction" resultMap="TransactionResult">
+        select t.transaction_id, t.user_id, t.amount, t.balance_after, t.tx_type, t.ref_id, t.remark, t.create_time,
+               u.user_name, u.nick_name
+        from biz_coin_transaction t
+        inner join sys_user u on t.user_id = u.user_id
+        <where>
+            <if test="userId != null">
+                and t.user_id = #{userId}
+            </if>
+            <if test="txType != null and txType != ''">
+                and t.tx_type = #{txType}
+            </if>
+            <if test="userName != null and userName != ''">
+                and u.user_name like concat('%', #{userName}, '%')
+            </if>
+            <if test="nickName != null and nickName != ''">
+                and u.nick_name like concat('%', #{nickName}, '%')
+            </if>
+        </where>
+        order by t.create_time desc
+    </select>
+
+    <select id="selectReputationLogList" parameterType="BizReputationLog" resultMap="ReputationLogResult">
+        select l.log_id, l.user_id, l.delta, l.score_after, l.reason, l.ref_id, l.remark, l.create_time,
+               u.user_name, u.nick_name
+        from biz_reputation_log l
+        inner join sys_user u on l.user_id = u.user_id
+        <where>
+            <if test="userId != null">
+                and l.user_id = #{userId}
+            </if>
+            <if test="reason != null and reason != ''">
+                and l.reason = #{reason}
+            </if>
+            <if test="userName != null and userName != ''">
+                and u.user_name like concat('%', #{userName}, '%')
+            </if>
+            <if test="nickName != null and nickName != ''">
+                and u.nick_name like concat('%', #{nickName}, '%')
+            </if>
+        </where>
+        order by l.create_time desc
+    </select>
+
+</mapper>

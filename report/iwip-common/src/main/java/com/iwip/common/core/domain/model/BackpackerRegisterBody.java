@@ -13,6 +13,10 @@ public class BackpackerRegisterBody
 
     private String phonenumber;
 
+    private String code;
+
+    private String uuid;
+
     public String getUsername()
     {
         return username;
@@ -51,5 +55,25 @@ public class BackpackerRegisterBody
     public void setPhonenumber(String phonenumber)
     {
         this.phonenumber = phonenumber;
+    }
+
+    public String getCode()
+    {
+        return code;
+    }
+
+    public void setCode(String code)
+    {
+        this.code = code;
+    }
+
+    public String getUuid()
+    {
+        return uuid;
+    }
+
+    public void setUuid(String uuid)
+    {
+        this.uuid = uuid;
     }
 }

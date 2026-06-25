@@ -3,7 +3,18 @@ import 'package:flutter/material.dart';
 import '../models/order.dart';
 import '../services/api_service.dart';
 import '../services/auth_storage.dart';
+import '../navigation/auth_navigation.dart';
+import '../widgets/layout/app_shell.dart';
 import 'login_screen.dart';
+import 'order_detail_screen.dart';
+import 'profile_tab.dart';
+import 'tabs/available_tab.dart';
+import 'tabs/create_order_tab.dart';
+import 'tabs/my_orders_tab.dart';
+import '../models/backpacker_profile.dart';
+import '../l10n/l10n_extension.dart';
+import '../l10n/server_message_localizer.dart';
+import '../widgets/common_widgets.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.api});
@@ -18,6 +29,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final _storage = AuthStorage();
   int _tabIndex = 0;
   String? _nickName;
+  int? _userId;
+  BackpackerProfile? _coinProfile;
+  bool _coinLoading = true;
+  String? _coinError;
 
   @override
   void initState() {
@@ -27,7 +42,50 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadProfile() async {
     final nickName = await _storage.getNickName();
-    if (mounted) setState(() => _nickName = nickName);
+    final userId = await _storage.getUserId();
+    if (mounted) {
+      setState(() {
+        _nickName = nickName;
+        _userId = userId;
+        _coinLoading = true;
+        _coinError = null;
+      });
+    }
+    try {
+      final coins = await widget.api.fetchCoinProfile();
+      if (mounted) {
+        setState(() {
+          _coinProfile = coins;
+          _coinLoading = false;
+          _coinError = null;
+        });
+      }
+    } on ApiException catch (error) {
+      if (mounted) {
+        setState(() {
+          _coinProfile = null;
+          _coinLoading = false;
+          _coinError = error.message;
+        });
+        if (error.unauthorized) {
+          await redirectToLoginIfUnauthorized(context, widget.api, error);
+          return;
+        }
+        showLocalizedAppMessage(context, error.message);
+      }
+    } catch (error) {
+      if (mounted) {
+        final message = context.l10n.loadCoinsFailed(
+          localizeServerMessage(context.l10n, '$error'),
+        );
+        setState(() {
+          _coinProfile = null;
+          _coinLoading = false;
+          _coinError = message;
+        });
+        showAppMessage(context, message);
+      }
+    }
   }
 
   Future<void> _logout() async {
@@ -38,383 +96,81 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _openDetail(OrderItem order) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => OrderDetailScreen(
+          api: widget.api,
+          orderId: order.orderId,
+          initialOrder: order,
+        ),
+      ),
+    );
+  }
+
+  void _goToTab(int index) => setState(() => _tabIndex = index);
+
+  Widget _buildTab(int index) {
+    switch (index) {
+      case 0:
+        return AvailableTab(
+          api: widget.api,
+          userId: _userId,
+          nickName: _nickName,
+          coinProfile: _coinProfile,
+          coinLoading: _coinLoading,
+          coinError: _coinError,
+          isActive: _tabIndex == 0,
+          onTapOrder: _openDetail,
+          onCoinsChanged: _loadProfile,
+          onCreateTask: () => _goToTab(2),
+        );
+      case 1:
+        return MyOrdersTab(
+          api: widget.api,
+          userId: _userId,
+          coinProfile: _coinProfile,
+          coinLoading: _coinLoading,
+          coinError: _coinError,
+          onTapOrder: _openDetail,
+          onCoinsChanged: _loadProfile,
+          onCreateTask: () => _goToTab(2),
+          onTakeTasks: () => _goToTab(0),
+        );
+      case 2:
+        return CreateOrderTab(
+          api: widget.api,
+          coinProfile: _coinProfile,
+          coinLoading: _coinLoading,
+          coinError: _coinError,
+          onCreated: () {
+            _loadProfile();
+            _goToTab(1);
+          },
+        );
+      default:
+        return ProfileTab(
+          api: widget.api,
+          onProfileChanged: _loadProfile,
+          onLogout: _logout,
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Backpacker${_nickName == null ? '' : ' · $_nickName'}'),
-        actions: [
-          IconButton(onPressed: _logout, icon: const Icon(Icons.logout), tooltip: 'Keluar'),
-        ],
-      ),
+    return AppShell(
+      nickName: _nickName,
+      tabIndex: _tabIndex,
+      onTabSelected: _goToTab,
       body: IndexedStack(
         index: _tabIndex,
         children: [
-          _AvailableTab(api: widget.api),
-          _MyOrdersTab(api: widget.api),
-          _CreateOrderTab(api: widget.api, onCreated: () => setState(() => _tabIndex = 1)),
+          _buildTab(0),
+          _buildTab(1),
+          _buildTab(2),
+          _buildTab(3),
         ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tabIndex,
-        onDestinationSelected: (index) => setState(() => _tabIndex = index),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.explore), label: 'Tersedia'),
-          NavigationDestination(icon: Icon(Icons.list_alt), label: 'Pesanan Saya'),
-          NavigationDestination(icon: Icon(Icons.add_circle_outline), label: 'Buat Tugas'),
-        ],
-      ),
-    );
-  }
-}
-
-class _AvailableTab extends StatefulWidget {
-  const _AvailableTab({required this.api});
-
-  final ApiService api;
-
-  @override
-  State<_AvailableTab> createState() => _AvailableTabState();
-}
-
-class _AvailableTabState extends State<_AvailableTab> {
-  bool _loading = true;
-  List<OrderItem> _orders = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() => _loading = true);
-    try {
-      final orders = await widget.api.fetchAvailableOrders();
-      if (mounted) setState(() => _orders = orders);
-    } on ApiException catch (error) {
-      _showError(error.message);
-    } catch (_) {
-      _showError('Gagal memuat tugas tersedia');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _take(OrderItem order) async {
-    try {
-      await widget.api.takeOrderAction(order.orderId, 'take');
-      _showMessage('Tugas "${order.title}" berhasil diambil');
-      await _load();
-    } on ApiException catch (error) {
-      _showError(error.message);
-    }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: _orders.isEmpty
-          ? ListView(
-              children: const [
-                SizedBox(height: 120),
-                Center(child: Text('Belum ada tugas tersedia')),
-              ],
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: _orders.length,
-              itemBuilder: (context, index) {
-                final order = _orders[index];
-                return _OrderCard(
-                  order: order,
-                  actions: [
-                    FilledButton(
-                      onPressed: () => _take(order),
-                      child: const Text('Ambil Tugas'),
-                    ),
-                  ],
-                );
-              },
-            ),
-    );
-  }
-}
-
-class _MyOrdersTab extends StatefulWidget {
-  const _MyOrdersTab({required this.api});
-
-  final ApiService api;
-
-  @override
-  State<_MyOrdersTab> createState() => _MyOrdersTabState();
-}
-
-class _MyOrdersTabState extends State<_MyOrdersTab> {
-  bool _loading = true;
-  List<OrderItem> _orders = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() => _loading = true);
-    try {
-      final orders = await widget.api.fetchMyOrders();
-      if (mounted) setState(() => _orders = orders);
-    } on ApiException catch (error) {
-      _showError(error.message);
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _action(OrderItem order, String action) async {
-    try {
-      await widget.api.takeOrderAction(order.orderId, action);
-      _showMessage('Status pesanan diperbarui');
-      await _load();
-    } on ApiException catch (error) {
-      _showError(error.message);
-    }
-  }
-
-  List<Widget> _actionsFor(OrderItem order) {
-    switch (order.status) {
-      case 'DRAFT':
-        return [
-          OutlinedButton(onPressed: () => _action(order, 'publish'), child: const Text('Publish')),
-          TextButton(onPressed: () => _action(order, 'cancel'), child: const Text('Batalkan')),
-        ];
-      case 'PUBLISHED':
-        return [
-          TextButton(onPressed: () => _action(order, 'cancel'), child: const Text('Batalkan')),
-        ];
-      case 'TAKEN':
-        return [
-          FilledButton(onPressed: () => _action(order, 'start'), child: const Text('Mulai Kerjakan')),
-        ];
-      case 'IN_PROGRESS':
-        return [
-          FilledButton(onPressed: () => _action(order, 'complete'), child: const Text('Selesai')),
-        ];
-      default:
-        return [];
-    }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: _orders.isEmpty
-          ? ListView(
-              children: const [
-                SizedBox(height: 120),
-                Center(child: Text('Belum ada pesanan')),
-              ],
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: _orders.length,
-              itemBuilder: (context, index) {
-                final order = _orders[index];
-                final actions = _actionsFor(order);
-                return _OrderCard(order: order, actions: actions);
-              },
-            ),
-    );
-  }
-}
-
-class _CreateOrderTab extends StatefulWidget {
-  const _CreateOrderTab({required this.api, required this.onCreated});
-
-  final ApiService api;
-  final VoidCallback onCreated;
-
-  @override
-  State<_CreateOrderTab> createState() => _CreateOrderTabState();
-}
-
-class _CreateOrderTabState extends State<_CreateOrderTab> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _rewardController = TextEditingController();
-  final _locationController = TextEditingController();
-  String _category = 'general';
-  bool _loading = false;
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
-    try {
-      await widget.api.createOrder(
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        rewardAmount: num.parse(_rewardController.text.trim()),
-        category: _category,
-        locationText: _locationController.text.trim(),
-      );
-      _titleController.clear();
-      _descriptionController.clear();
-      _rewardController.clear();
-      _locationController.clear();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tugas berhasil dibuat dan dipublikasikan')),
-      );
-      widget.onCreated();
-    } on ApiException catch (error) {
-      _showError(error.message);
-    } catch (_) {
-      _showError('Gagal membuat tugas');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    _rewardController.dispose();
-    _locationController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Judul tugas', border: OutlineInputBorder()),
-              validator: (value) => value == null || value.trim().isEmpty ? 'Wajib diisi' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _descriptionController,
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Deskripsi', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              key: ValueKey(_category),
-              initialValue: _category,
-              decoration: const InputDecoration(labelText: 'Kategori', border: OutlineInputBorder()),
-              items: const [
-                DropdownMenuItem(value: 'general', child: Text('Umum')),
-                DropdownMenuItem(value: 'delivery', child: Text('Antar Barang')),
-                DropdownMenuItem(value: 'helper', child: Text('Bantuan')),
-                DropdownMenuItem(value: 'tech', child: Text('Teknisi')),
-                DropdownMenuItem(value: 'errands', child: Text('Belanja / Errands')),
-              ],
-              onChanged: (value) => setState(() => _category = value ?? 'general'),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _rewardController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Imbalan (Rp)', border: OutlineInputBorder()),
-              validator: (value) => value == null || num.tryParse(value) == null ? 'Angka tidak valid' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _locationController,
-              decoration: const InputDecoration(labelText: 'Lokasi', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: _loading ? null : _submit,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                child: _loading
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Buat & Publish'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OrderCard extends StatelessWidget {
-  const _OrderCard({required this.order, required this.actions});
-
-  final OrderItem order;
-  final List<Widget> actions;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(order.title, style: Theme.of(context).textTheme.titleMedium),
-                ),
-                Chip(label: Text(order.statusLabel)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text('Rp ${order.rewardAmount}'),
-            if (order.locationText != null && order.locationText!.isNotEmpty)
-              Text(order.locationText!, style: Theme.of(context).textTheme.bodySmall),
-            if (order.description != null && order.description!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(order.description!),
-            ],
-            if (order.creatorName != null)
-              Text('Pembuat: ${order.creatorName}', style: Theme.of(context).textTheme.bodySmall),
-            if (actions.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Wrap(spacing: 8, runSpacing: 8, children: actions),
-            ],
-          ],
-        ),
       ),
     );
   }

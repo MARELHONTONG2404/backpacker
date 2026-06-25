@@ -53,6 +53,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             o.del_flag = '0'
             and o.status = 'PUBLISHED'
+            and o.executor_id is null
             <if test="category != null and category != ''">
                 and o.category = #{category}
             </if>
@@ -168,6 +169,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             update_time = sysdate()
         where order_id = #{orderId}
           and status = 'PUBLISHED'
+          and executor_id is null
           and del_flag = '0'
     </update>
 
@@ -184,7 +186,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and del_flag = '0'
     </update>
 
-    <update id="completeBizOrder" parameterType="BizOrder">
+    <update id="submitBizOrder" parameterType="BizOrder">
+        update biz_order
+        set status = #{status},
+            version = version + 1,
+            update_by = #{updateBy},
+            update_time = sysdate()
+        where order_id = #{orderId}
+          and executor_id = #{executorId}
+          and status in ('TAKEN', 'IN_PROGRESS')
+          and del_flag = '0'
+    </update>
+
+    <update id="confirmBizOrder" parameterType="BizOrder">
         update biz_order
         set status = #{status},
             completed_at = sysdate(),
@@ -192,8 +206,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             update_by = #{updateBy},
             update_time = sysdate()
         where order_id = #{orderId}
-          and executor_id = #{executorId}
-          and status = 'IN_PROGRESS'
+          and creator_id = #{creatorId}
+          and status = 'SUBMITTED'
           and del_flag = '0'
     </update>
 
@@ -210,6 +224,39 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and status in ('DRAFT', 'PUBLISHED')
           and del_flag = '0'
     </update>
+
+    <update id="abandonBizOrder" parameterType="BizOrder">
+        update biz_order
+        set status = 'PUBLISHED',
+            executor_id = null,
+            taken_at = null,
+            started_at = null,
+            cancel_reason = #{cancelReason},
+            version = version + 1,
+            update_by = #{updateBy},
+            update_time = sysdate()
+        where order_id = #{orderId}
+          and executor_id = #{executorId}
+          and status in ('TAKEN', 'IN_PROGRESS')
+          and del_flag = '0'
+    </update>
+
+    <update id="expireBizOrder">
+        update biz_order
+        set status = 'EXPIRED',
+            update_time = sysdate()
+        where order_id = #{orderId}
+          and status = 'PUBLISHED'
+          and del_flag = '0'
+    </update>
+
+    <select id="selectStalePublishedOrders" resultMap="BizOrderResult">
+        <include refid="selectBizOrderVo"/>
+        where o.status = 'PUBLISHED'
+          and o.del_flag = '0'
+          and o.published_at is not null
+          and o.published_at &lt; date_sub(sysdate(), interval #{days} day)
+    </select>
 
     <insert id="insertBizOrderLog" parameterType="BizOrderLog" useGeneratedKeys="true" keyProperty="logId">
         insert into biz_order_log (

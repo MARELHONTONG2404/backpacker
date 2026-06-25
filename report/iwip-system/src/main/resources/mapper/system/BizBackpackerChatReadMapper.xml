@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iwip.system.mapper.BizBackpackerChatReadMapper">
+
+    <insert id="upsertReadState">
+        insert into biz_backpacker_chat_read (order_id, user_id, last_read_message_id, update_time)
+        values (#{orderId}, #{userId}, #{lastReadMessageId}, sysdate())
+        on duplicate key update
+            last_read_message_id = greatest(last_read_message_id, #{lastReadMessageId}),
+            update_time = sysdate()
+    </insert>
+
+    <select id="countUnreadForOrder" resultType="int">
+        select count(*)
+        from biz_backpacker_chat_message m
+        where m.order_id = #{orderId}
+          and m.sender_id != #{userId}
+          and m.message_id &gt; coalesce(
+                (select r.last_read_message_id
+                 from biz_backpacker_chat_read r
+                 where r.order_id = #{orderId}
+                   and r.user_id = #{userId}),
+                0)
+    </select>
+
+    <select id="countTotalUnread" resultType="int">
+        select count(*)
+        from biz_backpacker_chat_message m
+        inner join biz_order o on o.order_id = m.order_id
+        where (o.creator_id = #{userId} or o.executor_id = #{userId})
+          and m.sender_id != #{userId}
+          and m.message_id &gt; coalesce(
+                (select r.last_read_message_id
+                 from biz_backpacker_chat_read r
+                 where r.order_id = m.order_id
+                   and r.user_id = #{userId}),
+                0)
+    </select>
+</mapper>

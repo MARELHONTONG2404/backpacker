@@ -2,6 +2,7 @@ export default {
   index: '首页',
   lock: '锁定屏幕',
   user: '个人中心',
+  admin_profile: '管理员资料',
   system: '系统管理',
   system_user: '用户管理',
   system_role: '角色管理',
@@ -29,5 +30,12 @@ export default {
   system_user_auth: '分配角色',
   system_role_auth: '分配用户',
   system_dict_data: '字典数据',
-  monitor_job_log: '调度日志'
+  monitor_job_log: '调度日志',
+  backpacker: 'Backpacker',
+  backpacker_order: '订单列表',
+  backpacker_users: 'Backpacker资料',
+  backpacker_profile: 'Backpacker资料',
+  backpacker_coin: '铜币记录',
+  backpacker_reputation: '信誉日志',
+  backpacker_rating: '任务评价'
 }

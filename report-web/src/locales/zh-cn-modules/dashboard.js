@@ -31,6 +31,7 @@ export default {
   statusPublished: '已发布',
   statusTaken: '已接单',
   statusInProgress: '进行中',
+  statusSubmitted: '待确认',
   statusCompleted: '已完成',
   statusCancelled: '已取消',
   noChartData: '暂无数据',

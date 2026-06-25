@@ -1,6 +1,13 @@
 <template>
   <div>
-    <el-popover ref="noticePopover" placement="bottom-end" :width="320" trigger="manual" v-model:visible="noticeVisible" popper-class="notice-popover">
+    <el-popover
+      ref="noticePopover"
+      :placement="isMobile ? 'bottom' : 'bottom-end'"
+      :width="popoverWidth"
+      trigger="manual"
+      v-model:visible="noticeVisible"
+      popper-class="notice-popover"
+    >
       <!-- 弹出内容 -->
       <div class="notice-header">
         <span class="notice-title">{{ t('navbar.noticeTitle') }}</span>
@@ -25,7 +32,12 @@
 
       <!-- 触发器 -->
       <template #reference>
-        <div class="right-menu-item hover-effect notice-trigger" @mouseenter="onNoticeEnter" @mouseleave="onNoticeLeave">
+        <div
+          class="right-menu-item hover-effect notice-trigger"
+          @mouseenter="onNoticeEnter"
+          @mouseleave="onNoticeLeave"
+          @click="onNoticeClick"
+        >
           <svg-icon icon-class="bell" />
           <span v-if="unreadCount > 0" class="notice-badge">{{ unreadCount }}</span>
         </div>
@@ -41,8 +53,12 @@
 import { useI18n } from 'vue-i18n'
 import NoticeDetailView from './DetailView'
 import { listNoticeTop, markNoticeRead, markNoticeReadAll } from '@/api/system/notice'
+import useAppStore from '@/store/modules/app'
 
 const { t } = useI18n()
+const appStore = useAppStore()
+const isMobile = computed(() => appStore.device === 'mobile')
+const popoverWidth = computed(() => (isMobile.value ? Math.min(window.innerWidth - 24, 360) : 320))
 const noticePopover = ref(null)
 const noticeList = ref([])
 const unreadCount = ref(0)
@@ -82,7 +98,16 @@ function onNoticeEnter() {
 
 // 鼠标离开铃铛区域
 function onNoticeLeave() {
+  if (isMobile.value) return
   noticeLeaveTimer.value = setTimeout(() => { noticeVisible.value = false }, 150)
+}
+
+function onNoticeClick() {
+  if (!isMobile.value) return
+  noticeVisible.value = !noticeVisible.value
+  if (noticeVisible.value) {
+    loadNoticeTop()
+  }
 }
 
 // 预览公告详情
@@ -109,7 +134,12 @@ function markAllRead() {
 <style lang="scss" scoped>
 .notice-trigger {
   position: relative;
-  transform: translateX(-6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  transform: none;
   .svg-icon { width: 1.2em; height: 1.2em; vertical-align: -0.2em; }
   .notice-badge {
     position: absolute;

@@ -1,0 +1,38 @@
+# Infrastruktur dev: MySQL + Redis
+# Usage: docker compose up -d
+# Import SQL: ./scripts/setup-database.sh DB_PASSWORD=iwip123456
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: backpacker-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: iwip_manajemen
+      MYSQL_USER: iwip
+      MYSQL_PASSWORD: iwip123456
+    ports:
+      - "3306:3306"
+    volumes:
+      - backpacker_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: backpacker-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  backpacker_mysql_data:

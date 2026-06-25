@@ -45,6 +45,22 @@
       </el-col>
     </el-row>
 
+    <!-- Gamifikasi Backpacker -->
+    <div class="section-title">{{ t('backpacker.gamificationSection') }}</div>
+    <el-row :gutter="16" class="section-row">
+      <el-col v-for="item in gamificationCards" :key="item.key" :xs="12" :sm="6">
+        <el-card shadow="hover" class="stat-card report-stat" :body-style="{ padding: '18px' }">
+          <div class="stat-icon" :style="{ background: item.bg }">
+            <el-icon :size="20"><component :is="item.icon" /></el-icon>
+          </div>
+          <div class="stat-body">
+            <div class="stat-value">{{ item.value }}</div>
+            <div class="stat-label">{{ item.label }}</div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
     <!-- Grafik sistem -->
     <el-row :gutter="16" class="section-row">
       <el-col :xs="24" :lg="16">
@@ -178,7 +194,7 @@
 <script setup name="Index">
 import { useI18n } from 'vue-i18n'
 import * as echarts from 'echarts'
-import { User, Monitor, Bell, Key, Setting, UserFilled, Document, Files, CircleCheck, Clock, Warning } from '@element-plus/icons-vue'
+import { User, Monitor, Bell, Key, Setting, UserFilled, Document, Files, CircleCheck, Clock, Warning, Coin, Star, TrendCharts } from '@element-plus/icons-vue'
 import useUserStore from '@/store/modules/user'
 import { fetchDashboardData } from '@/api/dashboard'
 import { markNoticeRead } from '@/api/system/notice'
@@ -207,6 +223,13 @@ const orderStats = ref({
   cancelled: 0,
   thisMonth: 0
 })
+const gamificationStats = ref({
+  totalProfiles: 0,
+  totalCoins: 0,
+  avgReputation: 0,
+  lowReputation: 0,
+  totalRatings: 0
+})
 
 const loginChartRef = ref(null)
 const memoryChartRef = ref(null)
@@ -222,6 +245,7 @@ const STATUS_LABELS = computed(() => ({
   PUBLISHED: t('dashboard.statusPublished'),
   TAKEN: t('dashboard.statusTaken'),
   IN_PROGRESS: t('dashboard.statusInProgress'),
+  SUBMITTED: t('dashboard.statusSubmitted'),
   COMPLETED: t('dashboard.statusCompleted'),
   CANCELLED: t('dashboard.statusCancelled')
 }))
@@ -249,6 +273,13 @@ const orderStatCards = computed(() => [
   { key: 'oactive', label: t('dashboard.active'), value: orderStats.value.active, icon: Document, bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
   { key: 'ocompleted', label: t('dashboard.completed'), value: orderStats.value.completed, icon: CircleCheck, bg: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' },
   { key: 'omonth', label: t('dashboard.thisMonth'), value: orderStats.value.thisMonth, icon: Warning, bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }
+])
+
+const gamificationCards = computed(() => [
+  { key: 'gprofiles', label: t('backpacker.totalProfiles'), value: gamificationStats.value.totalProfiles, icon: User, bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  { key: 'gcoins', label: t('backpacker.totalCoins'), value: gamificationStats.value.totalCoins, icon: Coin, bg: 'linear-gradient(135deg, #f7971e 0%, #ffd200 100%)' },
+  { key: 'gavgrep', label: t('backpacker.avgReputation'), value: gamificationStats.value.avgReputation, icon: TrendCharts, bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+  { key: 'glowrep', label: t('backpacker.lowReputation'), value: gamificationStats.value.lowReputation, icon: Star, bg: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' }
 ])
 
 const quickLinks = computed(() => [
@@ -423,7 +454,7 @@ function handleResize() {
 async function loadDashboard() {
   loading.value = true
   try {
-    const [userRes, onlineRes, noticeRes, loginRes, serverRes, orderRes] = await fetchDashboardData()
+    const [userRes, onlineRes, noticeRes, loginRes, serverRes, orderRes, gamificationRes] = await fetchDashboardData()
 
     userCount.value = userRes.total ?? 0
     onlineCount.value = onlineRes.total ?? 0
@@ -438,6 +469,16 @@ async function loadDashboard() {
         completed: orderRes.data.completed ?? 0,
         cancelled: orderRes.data.cancelled ?? 0,
         thisMonth: orderRes.data.thisMonth ?? 0
+      }
+    }
+
+    if (gamificationRes?.data) {
+      gamificationStats.value = {
+        totalProfiles: gamificationRes.data.totalProfiles ?? 0,
+        totalCoins: gamificationRes.data.totalCoins ?? 0,
+        avgReputation: gamificationRes.data.avgReputation ?? 0,
+        lowReputation: gamificationRes.data.lowReputation ?? 0,
+        totalRatings: gamificationRes.data.totalRatings ?? 0
       }
     }
 
@@ -622,6 +663,10 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 768px) {
+  .dashboard-container {
+    padding: 0 2px;
+  }
+
   .welcome-inner {
     flex-direction: column;
     align-items: flex-start;
@@ -629,6 +674,10 @@ onBeforeUnmount(() => {
 
   .welcome-meta {
     text-align: left;
+  }
+
+  .section-title {
+    font-size: 15px;
   }
 }
 </style>

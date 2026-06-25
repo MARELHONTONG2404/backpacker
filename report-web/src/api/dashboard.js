@@ -5,6 +5,7 @@ import { listNoticeTop } from '@/api/system/notice'
 import { list as listLogininfor } from '@/api/monitor/logininfor'
 import { getServer } from '@/api/monitor/server'
 import { getOrderStats } from '@/api/backpacker/order'
+import { getGamificationStats } from '@/api/backpacker/profile'
 
 /** Ambil semua data dashboard Backpacker */
 export function fetchDashboardData() {
@@ -14,6 +15,7 @@ export function fetchDashboardData() {
     listNoticeTop(),
     listLogininfor({ pageNum: 1, pageSize: 100 }),
     getServer().catch(() => null),
-    getOrderStats().catch(() => null)
+    getOrderStats().catch(() => null),
+    getGamificationStats().catch(() => null)
   ])
 }

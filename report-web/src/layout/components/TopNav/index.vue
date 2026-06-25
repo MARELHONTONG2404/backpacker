@@ -53,7 +53,7 @@ const visibleNumber = ref(null)
 // 当前激活菜单的 index
 const currentIndex = ref(null)
 // 隐藏侧边栏路由
-const hideList = ['/index', '/user/profile']
+const hideList = ['/index', '/account/center']
 
 const appStore = useAppStore()
 const settingsStore = useSettingsStore()

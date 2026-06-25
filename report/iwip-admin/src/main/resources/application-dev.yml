@@ -10,9 +10,9 @@ spring:
     druid:
       # 主库数据源
       master:
-        url: jdbc:mysql://localhost:3306/iwip_manajemen?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B9&rewriteBatchedStatements=true
-        username: iwip
-        password: iwip123456
+        url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:iwip_manajemen}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B9&rewriteBatchedStatements=true
+        username: ${DB_USERNAME:iwip}
+        password: ${DB_PASSWORD:iwip123456}
       # 从库数据源
       slave:
         # 从数据源开关/默认关闭
@@ -66,11 +66,11 @@ spring:
   # redis 配置
   redis:
     # 地址
-    host: localhost
+    host: ${REDIS_HOST:localhost}
     # 端口，默认为6379
-    port: 6379
+    port: ${REDIS_PORT:6379}
     # 数据库索引
-    database: 1
+    database: ${REDIS_DATABASE:1}
     # 连接超时时间
     timeout: 10s
     lettuce:
@@ -83,3 +83,11 @@ spring:
         max-active: 8
         # #连接池最大阻塞等待时间（使用负值表示没有限制）
         max-wait: -1ms
+
+# Dev: allow all origins; override via CORS_ALLOWED_ORIGINS if needed
+cors:
+  allowed-origin-patterns: ${CORS_ALLOWED_ORIGINS:*}
+
+# Mobile Flutter web — served at http://host:8080/app/ (works from HP when :8888 blocked)
+backpacker:
+  mobile-web-path: ${MOBILE_WEB_PATH:}

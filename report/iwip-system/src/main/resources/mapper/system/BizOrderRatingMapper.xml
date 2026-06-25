@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iwip.system.mapper.BizOrderRatingMapper">
+
+    <resultMap type="BizOrderRating" id="RatingResult">
+        <id     property="ratingId"     column="rating_id"     />
+        <result property="orderId"      column="order_id"      />
+        <result property="raterId"      column="rater_id"      />
+        <result property="executorId"   column="executor_id"   />
+        <result property="score"        column="score"         />
+        <result property="comment"      column="comment"       />
+        <result property="createTime"   column="create_time"   />
+        <result property="orderNo"      column="order_no"      />
+        <result property="orderTitle"   column="order_title"   />
+        <result property="raterName"    column="rater_name"    />
+        <result property="executorName" column="executor_name" />
+    </resultMap>
+
+    <select id="selectRatingByOrderId" parameterType="Long" resultMap="RatingResult">
+        select rating_id, order_id, rater_id, executor_id, score, comment, create_time
+        from biz_order_rating
+        where order_id = #{orderId}
+    </select>
+
+    <insert id="insertRating" parameterType="BizOrderRating" useGeneratedKeys="true" keyProperty="ratingId">
+        insert into biz_order_rating (order_id, rater_id, executor_id, score, comment, create_time)
+        values (#{orderId}, #{raterId}, #{executorId}, #{score}, #{comment}, #{createTime})
+    </insert>
+
+    <select id="selectRatingList" parameterType="BizOrderRating" resultMap="RatingResult">
+        select r.rating_id, r.order_id, r.rater_id, r.executor_id, r.score, r.comment, r.create_time,
+               o.order_no, o.title as order_title,
+               c.nick_name as rater_name, e.nick_name as executor_name
+        from biz_order_rating r
+        inner join biz_order o on r.order_id = o.order_id
+        left join sys_user c on r.rater_id = c.user_id
+        left join sys_user e on r.executor_id = e.user_id
+        <where>
+            <if test="orderNo != null and orderNo != ''">
+                and o.order_no like concat('%', #{orderNo}, '%')
+            </if>
+            <if test="orderTitle != null and orderTitle != ''">
+                and o.title like concat('%', #{orderTitle}, '%')
+            </if>
+            <if test="score != null">
+                and r.score = #{score}
+            </if>
+            <if test="executorName != null and executorName != ''">
+                and e.nick_name like concat('%', #{executorName}, '%')
+            </if>
+        </where>
+        order by r.create_time desc
+    </select>
+
+</mapper>

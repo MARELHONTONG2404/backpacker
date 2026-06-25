@@ -9,13 +9,20 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+import com.iwip.common.constant.BackpackerConstants;
 import com.iwip.common.exception.ServiceException;
 import com.iwip.common.utils.DateUtils;
 import com.iwip.common.utils.StringUtils;
 import com.iwip.system.domain.BizOrder;
 import com.iwip.system.domain.BizOrderLog;
+import com.iwip.system.domain.BizOrderRating;
 import com.iwip.system.mapper.BizOrderMapper;
+import com.iwip.system.mapper.BizOrderRatingMapper;
+import com.iwip.system.service.IBackpackerCoinService;
+import com.iwip.system.service.IBackpackerNotificationService;
 import com.iwip.system.service.IBizOrderService;
+import com.iwip.system.domain.BizBackpackerNotification;
 
 /**
  * Pesanan Backpacker service implementation.
@@ -26,10 +33,38 @@ public class BizOrderServiceImpl implements IBizOrderService
     @Autowired
     private BizOrderMapper bizOrderMapper;
 
+    @Autowired
+    private BizOrderRatingMapper orderRatingMapper;
+
+    @Autowired
+    private IBackpackerCoinService backpackerCoinService;
+
+    @Autowired
+    private IBackpackerNotificationService notificationService;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
     @Override
     public BizOrder selectBizOrderById(Long orderId)
     {
-        return bizOrderMapper.selectBizOrderById(orderId);
+        BizOrder order = bizOrderMapper.selectBizOrderById(orderId);
+        enrichWithRating(order);
+        return order;
+    }
+
+    private void enrichWithRating(BizOrder order)
+    {
+        if (order == null)
+        {
+            return;
+        }
+        BizOrderRating rating = orderRatingMapper.selectRatingByOrderId(order.getOrderId());
+        if (rating != null)
+        {
+            order.setRatingScore(rating.getScore());
+            order.setRatingComment(rating.getComment());
+        }
     }
 
     @Override
@@ -49,7 +84,21 @@ public class BizOrderServiceImpl implements IBizOrderService
         }
         order.getParams().put("userId", userId);
         order.getParams().put("scope", normalizedScope);
-        return bizOrderMapper.selectMyOrderList(order);
+        List<BizOrder> list = bizOrderMapper.selectMyOrderList(order);
+        enrichOrdersWithRatings(list);
+        return list;
+    }
+
+    private void enrichOrdersWithRatings(List<BizOrder> orders)
+    {
+        if (orders == null || orders.isEmpty())
+        {
+            return;
+        }
+        for (BizOrder item : orders)
+        {
+            enrichWithRating(item);
+        }
     }
 
     @Override
@@ -65,7 +114,8 @@ public class BizOrderServiceImpl implements IBizOrderService
         stats.put("total", bizOrderMapper.countAllOrders());
         stats.put("published", bizOrderMapper.countOrdersByStatus(BizOrder.STATUS_PUBLISHED));
         stats.put("active", bizOrderMapper.countOrdersByStatus(BizOrder.STATUS_TAKEN)
-                + bizOrderMapper.countOrdersByStatus(BizOrder.STATUS_IN_PROGRESS));
+                + bizOrderMapper.countOrdersByStatus(BizOrder.STATUS_IN_PROGRESS)
+                + bizOrderMapper.countOrdersByStatus(BizOrder.STATUS_SUBMITTED));
         stats.put("completed", bizOrderMapper.countOrdersByStatus(BizOrder.STATUS_COMPLETED));
         stats.put("cancelled", bizOrderMapper.countOrdersByStatus(BizOrder.STATUS_CANCELLED));
         stats.put("thisMonth", bizOrderMapper.countOrdersThisMonth());
@@ -113,6 +163,8 @@ public class BizOrderServiceImpl implements IBizOrderService
             throw new ServiceException("Hanya pesanan berstatus DRAFT yang dapat dipublikasikan");
         }
 
+        backpackerCoinService.chargePublishFee(creatorId, orderId);
+
         BizOrder update = new BizOrder();
         update.setOrderId(orderId);
         update.setCreatorId(creatorId);
@@ -146,6 +198,8 @@ public class BizOrderServiceImpl implements IBizOrderService
             throw new ServiceException("Tugas tidak tersedia atau sudah diambil");
         }
 
+        backpackerCoinService.assertCanTakeTask(executorId);
+
         BizOrder update = new BizOrder();
         update.setOrderId(orderId);
         update.setExecutorId(executorId);
@@ -158,6 +212,11 @@ public class BizOrderServiceImpl implements IBizOrderService
         }
 
         insertOrderLog(orderId, BizOrder.STATUS_PUBLISHED, BizOrder.STATUS_TAKEN, executorId, "Tugas diambil pelaksana");
+        notificationService.notifyUser(existing.getCreatorId(),
+                "Tugas diambil",
+                "Tugas \"" + existing.getTitle() + "\" telah diambil pelaksana.",
+                BizBackpackerNotification.TYPE_ORDER_TAKEN,
+                orderId);
         return bizOrderMapper.selectBizOrderById(orderId);
     }
 
@@ -184,23 +243,88 @@ public class BizOrderServiceImpl implements IBizOrderService
 
     @Override
     @Transactional
-    public BizOrder completeOrder(Long orderId, Long executorId, String username)
+    public BizOrder submitOrder(Long orderId, Long executorId, String username)
     {
-        requireExecutorOrder(orderId, executorId, BizOrder.STATUS_IN_PROGRESS, "Hanya pelaksana dapat menyelesaikan tugas yang sedang dikerjakan");
+        BizOrder existing = requireExecutorOrder(orderId, executorId, null,
+                "Hanya pelaksana dapat mengajukan penyelesaian tugas");
+        if (!BizOrder.STATUS_TAKEN.equals(existing.getStatus())
+                && !BizOrder.STATUS_IN_PROGRESS.equals(existing.getStatus()))
+        {
+            throw new ServiceException("Status pesanan tidak valid untuk pengajuan selesai");
+        }
 
+        String fromStatus = existing.getStatus();
         BizOrder update = new BizOrder();
         update.setOrderId(orderId);
         update.setExecutorId(executorId);
+        update.setStatus(BizOrder.STATUS_SUBMITTED);
+        update.setUpdateBy(username);
+
+        if (bizOrderMapper.submitBizOrder(update) <= 0)
+        {
+            throw new ServiceException("Gagal mengajukan penyelesaian tugas");
+        }
+
+        insertOrderLog(orderId, fromStatus, BizOrder.STATUS_SUBMITTED, executorId, "Pelaksana mengajukan tugas selesai");
+        notificationService.notifyUser(existing.getCreatorId(),
+                "Pengajuan selesai",
+                "Pelaksana mengajukan penyelesaian tugas \"" + existing.getTitle() + "\". Silakan konfirmasi.",
+                BizBackpackerNotification.TYPE_ORDER_SUBMITTED,
+                orderId);
+        return bizOrderMapper.selectBizOrderById(orderId);
+    }
+
+    @Override
+    @Transactional
+    public BizOrder confirmOrder(Long orderId, Long creatorId, String username)
+    {
+        BizOrder existing = bizOrderMapper.selectBizOrderById(orderId);
+        if (existing == null)
+        {
+            throw new ServiceException("Pesanan tidak ditemukan");
+        }
+        if (!creatorId.equals(existing.getCreatorId()))
+        {
+            throw new ServiceException("Hanya pembuat tugas yang dapat mengonfirmasi penyelesaian");
+        }
+        if (!BizOrder.STATUS_SUBMITTED.equals(existing.getStatus()))
+        {
+            throw new ServiceException("Hanya tugas yang diajukan selesai yang dapat dikonfirmasi");
+        }
+        if (existing.getExecutorId() == null)
+        {
+            throw new ServiceException("Tugas tidak memiliki pelaksana");
+        }
+
+        BizOrder update = new BizOrder();
+        update.setOrderId(orderId);
+        update.setCreatorId(creatorId);
         update.setStatus(BizOrder.STATUS_COMPLETED);
         update.setUpdateBy(username);
 
-        if (bizOrderMapper.completeBizOrder(update) <= 0)
+        if (bizOrderMapper.confirmBizOrder(update) <= 0)
         {
-            throw new ServiceException("Gagal menyelesaikan tugas");
+            throw new ServiceException("Gagal mengonfirmasi penyelesaian tugas");
         }
 
-        insertOrderLog(orderId, BizOrder.STATUS_IN_PROGRESS, BizOrder.STATUS_COMPLETED, executorId, "Tugas selesai");
-        return bizOrderMapper.selectBizOrderById(orderId);
+        Long executorId = existing.getExecutorId();
+        insertOrderLog(orderId, BizOrder.STATUS_SUBMITTED, BizOrder.STATUS_COMPLETED, creatorId, "Pembuat tugas konfirmasi selesai");
+        backpackerCoinService.rewardTaskCompletion(executorId, orderId);
+        BizOrder completed = selectBizOrderById(orderId);
+        notificationService.notifyUser(creatorId,
+                "Tugas selesai",
+                "Tugas \"" + completed.getTitle() + "\" selesai. Silakan beri penilaian.",
+                BizBackpackerNotification.TYPE_ORDER_COMPLETED,
+                orderId);
+        notificationService.notifyUser(executorId,
+                "Reward diterima",
+                "Pembuat tugas mengonfirmasi tugas \"" + completed.getTitle() + "\" selesai. Anda mendapat +"
+                        + com.iwip.common.constant.BackpackerConstants.TASK_REWARD_COINS
+                        + " koin dan +" + com.iwip.common.constant.BackpackerConstants.REPUTATION_TASK_COMPLETE
+                        + " reputasi.",
+                BizBackpackerNotification.TYPE_ORDER_COMPLETED,
+                orderId);
+        return completed;
     }
 
     @Override
@@ -234,7 +358,160 @@ public class BizOrderServiceImpl implements IBizOrderService
         }
 
         insertOrderLog(orderId, existing.getStatus(), BizOrder.STATUS_CANCELLED, creatorId, update.getCancelReason());
-        return bizOrderMapper.selectBizOrderById(orderId);
+
+        if (BizOrder.STATUS_PUBLISHED.equals(existing.getStatus()))
+        {
+            refundPublishFeeForOrder(creatorId, orderId, "Pengembalian biaya publikasi — tugas dibatalkan");
+            notificationService.notifyUser(creatorId,
+                    "Tugas dibatalkan",
+                    "Tugas \"" + existing.getTitle() + "\" dibatalkan. "
+                            + BackpackerConstants.PUBLISH_FEE_COINS + " koin tembaga dikembalikan.",
+                    BizBackpackerNotification.TYPE_ORDER_CANCELLED,
+                    orderId);
+        }
+
+        return selectBizOrderById(orderId);
+    }
+
+    @Override
+    public int expireStalePublishedOrders()
+    {
+        List<BizOrder> staleOrders = bizOrderMapper.selectStalePublishedOrders(
+                BackpackerConstants.ORDER_EXPIRE_DAYS);
+        int expiredCount = 0;
+        for (BizOrder order : staleOrders)
+        {
+            Boolean expired = transactionTemplate.execute(status -> {
+                try
+                {
+                    return expirePublishedOrder(order);
+                }
+                catch (RuntimeException ex)
+                {
+                    status.setRollbackOnly();
+                    return false;
+                }
+            });
+            if (Boolean.TRUE.equals(expired))
+            {
+                expiredCount++;
+            }
+        }
+        return expiredCount;
+    }
+
+    private boolean expirePublishedOrder(BizOrder order)
+    {
+        if (bizOrderMapper.expireBizOrder(order.getOrderId()) <= 0)
+        {
+            return false;
+        }
+
+        refundPublishFeeForOrder(order.getCreatorId(), order.getOrderId(),
+                "Pengembalian biaya publikasi — tugas kedaluwarsa");
+        insertOrderLog(order.getOrderId(), BizOrder.STATUS_PUBLISHED, BizOrder.STATUS_EXPIRED,
+                order.getCreatorId(), "Tugas otomatis kedaluwarsa");
+        notificationService.notifyUser(order.getCreatorId(),
+                "Tugas kedaluwarsa",
+                "Tugas \"" + order.getTitle() + "\" kedaluwarsa. "
+                        + BackpackerConstants.PUBLISH_FEE_COINS + " koin tembaga dikembalikan.",
+                BizBackpackerNotification.TYPE_ORDER_EXPIRED,
+                order.getOrderId());
+        return true;
+    }
+
+    private void refundPublishFeeForOrder(Long creatorId, Long orderId, String remark)
+    {
+        backpackerCoinService.refundPublishFee(creatorId, orderId, remark);
+    }
+
+    @Override
+    @Transactional
+    public BizOrder abandonOrder(Long orderId, Long executorId, String username, String reason)
+    {
+        BizOrder existing = bizOrderMapper.selectBizOrderById(orderId);
+        if (existing == null)
+        {
+            throw new ServiceException("Pesanan tidak ditemukan");
+        }
+        if (!executorId.equals(existing.getExecutorId()))
+        {
+            throw new ServiceException("Hanya pelaksana yang dapat melepaskan tugas");
+        }
+        if (!BizOrder.STATUS_TAKEN.equals(existing.getStatus())
+                && !BizOrder.STATUS_IN_PROGRESS.equals(existing.getStatus()))
+        {
+            throw new ServiceException("Tugas tidak dapat dilepas pada status ini");
+        }
+
+        String fromStatus = existing.getStatus();
+        BizOrder update = new BizOrder();
+        update.setOrderId(orderId);
+        update.setExecutorId(executorId);
+        update.setCancelReason(StringUtils.isNotEmpty(reason) ? reason : "Dilepas oleh pelaksana");
+        update.setUpdateBy(username);
+
+        if (bizOrderMapper.abandonBizOrder(update) <= 0)
+        {
+            throw new ServiceException("Gagal melepaskan tugas");
+        }
+
+        insertOrderLog(orderId, fromStatus, BizOrder.STATUS_PUBLISHED, executorId, update.getCancelReason());
+        backpackerCoinService.penaltyTaskAbandoned(executorId, orderId);
+        return selectBizOrderById(orderId);
+    }
+
+    @Override
+    @Transactional
+    public BizOrder rateOrder(Long orderId, Long raterId, Integer score, String comment)
+    {
+        if (score == null || score < 1 || score > 5)
+        {
+            throw new ServiceException("Skor penilaian harus antara 1 hingga 5");
+        }
+
+        BizOrder existing = bizOrderMapper.selectBizOrderById(orderId);
+        if (existing == null)
+        {
+            throw new ServiceException("Pesanan tidak ditemukan");
+        }
+        if (!raterId.equals(existing.getCreatorId()))
+        {
+            throw new ServiceException("Hanya pembuat tugas yang dapat memberi penilaian");
+        }
+        if (!BizOrder.STATUS_COMPLETED.equals(existing.getStatus()))
+        {
+            throw new ServiceException("Hanya tugas selesai yang dapat dinilai");
+        }
+        if (existing.getExecutorId() == null)
+        {
+            throw new ServiceException("Tugas tidak memiliki pelaksana");
+        }
+        if (orderRatingMapper.selectRatingByOrderId(orderId) != null)
+        {
+            throw new ServiceException("Tugas ini sudah dinilai");
+        }
+
+        BizOrderRating rating = new BizOrderRating();
+        rating.setOrderId(orderId);
+        rating.setRaterId(raterId);
+        rating.setExecutorId(existing.getExecutorId());
+        rating.setScore(score);
+        rating.setComment(comment);
+        rating.setCreateTime(DateUtils.getNowDate());
+
+        if (orderRatingMapper.insertRating(rating) <= 0)
+        {
+            throw new ServiceException("Gagal menyimpan penilaian");
+        }
+
+        backpackerCoinService.applyRatingReputation(existing.getExecutorId(), score, orderId);
+        notificationService.notifyUser(existing.getExecutorId(),
+                "Penilaian diterima",
+                "Pembuat tugas memberi skor " + score + "/5 untuk tugas \"" + existing.getTitle() + "\".",
+                BizBackpackerNotification.TYPE_ORDER_RATED,
+                orderId);
+        return selectBizOrderById(orderId);
     }
 
     private BizOrder requireExecutorOrder(Long orderId, Long executorId, String expectedStatus, String forbiddenMessage)
@@ -248,7 +525,7 @@ public class BizOrderServiceImpl implements IBizOrderService
         {
             throw new ServiceException(forbiddenMessage);
         }
-        if (!expectedStatus.equals(existing.getStatus()))
+        if (expectedStatus != null && !expectedStatus.equals(existing.getStatus()))
         {
             throw new ServiceException("Status pesanan tidak valid untuk aksi ini");
         }

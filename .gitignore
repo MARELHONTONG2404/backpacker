@@ -10,7 +10,10 @@ report-web/node_modules/
 # Logs & local env
 **/*.log
 .env
-.env.*
+.env.local
+.env.*.local
+!.env.example
+!report-web/.env.example
 
 # IDE
 .idea/
@@ -31,3 +34,6 @@ Thumbs.db
 
 # Upload paths & secrets
 **/uploadPath/
+
+# Local tunnel logs (generated at runtime)
+scripts/.tunnel-*

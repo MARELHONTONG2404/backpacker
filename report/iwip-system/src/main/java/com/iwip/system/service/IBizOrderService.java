@@ -27,7 +27,15 @@ public interface IBizOrderService
 
     BizOrder startOrder(Long orderId, Long executorId, String username);
 
-    BizOrder completeOrder(Long orderId, Long executorId, String username);
+    BizOrder submitOrder(Long orderId, Long executorId, String username);
+
+    BizOrder confirmOrder(Long orderId, Long creatorId, String username);
 
     BizOrder cancelOrder(Long orderId, Long creatorId, String username, String cancelReason);
+
+    BizOrder abandonOrder(Long orderId, Long executorId, String username, String reason);
+
+    BizOrder rateOrder(Long orderId, Long raterId, Integer score, String comment);
+
+    int expireStalePublishedOrders();
 }

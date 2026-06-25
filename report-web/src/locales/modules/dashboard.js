@@ -31,6 +31,7 @@ export default {
   statusPublished: 'Dipublikasikan',
   statusTaken: 'Diambil',
   statusInProgress: 'Dikerjakan',
+  statusSubmitted: 'Menunggu Konfirmasi',
   statusCompleted: 'Selesai',
   statusCancelled: 'Dibatalkan',
   noChartData: 'Belum ada data',

@@ -1,0 +1,420 @@
+{
+  "@@locale": "id",
+  "appName": "Backpacker",
+  "appSubtitle": "Marketplace Jasa On-Demand",
+  "appConcept": "Platform penghubung pembuat tugas dan pelaksana jasa mikro",
+  "welcomeHello": "Halo, {name}!",
+  "@welcomeHello": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "loginTitle": "Backpacker",
+  "loginTagline": "Marketplace Jasa On-Demand",
+  "loginDescription": "Masuk untuk melihat tugas backpacker lain, mempublikasikan tugas sendiri, mengelola koin tembaga, dan memantau reputasi Anda.",
+  "captchaHint": "Masukkan kode verifikasi pada gambar untuk keamanan akun.",
+  "username": "Akun",
+  "password": "Kata sandi",
+  "captcha": "Kode verifikasi",
+  "remember": "Ingat kata sandi",
+  "submit": "Masuk",
+  "submitting": "Masuk...",
+  "registerLink": "Belum punya akun? Daftar sekarang",
+  "forgotPasswordLink": "Lupa password?",
+  "usernameRequired": "Masukkan akun Anda",
+  "passwordRequired": "Masukkan kata sandi Anda",
+  "captchaRequired": "Masukkan kode verifikasi",
+  "captchaLoadFailed": "Gagal memuat kode verifikasi. Pastikan backend berjalan, lalu ketuk gambar untuk coba lagi.",
+  "captchaNotReady": "Kode verifikasi belum siap. Ketuk gambar untuk memuat ulang.",
+  "registerTitle": "Daftar Backpacker",
+  "registerTagline": "Gabung marketplace jasa on-demand",
+  "registerDescription": "Daftar sebagai backpacker untuk melihat dan menerima tugas, serta mempublikasikan tugas sendiri dengan koin tembaga.",
+  "registerSubmit": "Daftar",
+  "registerSuccess": "Registrasi berhasil. Silakan masuk.",
+  "alreadyHaveAccount": "Sudah punya akun? Masuk",
+  "displayName": "Nama tampilan",
+  "phoneOptional": "Nomor telepon (opsional)",
+  "minChars2": "Minimal 2 karakter",
+  "minChars5": "Minimal 5 karakter",
+  "maxChars20": "Maksimal 20 karakter",
+  "forgotPasswordTitle": "Lupa Password",
+  "forgotPasswordTagline": "Backpacker",
+  "forgotPasswordDescription": "Verifikasi dengan username dan nomor telepon yang terdaftar.",
+  "registeredPhone": "Nomor telepon terdaftar",
+  "newPassword": "Password baru",
+  "resetPassword": "Atur Ulang Password",
+  "backToLogin": "Kembali ke login",
+  "passwordResetSuccess": "Password berhasil diatur ulang. Silakan masuk.",
+  "footer": "Copyright © 2026 Backpacker. All Rights Reserved.",
+  "tabAvailable": "Ambil",
+  "tabMine": "Saya",
+  "tabCreate": "Buat",
+  "tabProfile": "Profil",
+  "roleOverviewTitle": "Dua Peran di Backpacker",
+  "roleCreatorTitle": "Pembuat Tugas",
+  "roleCreatorDesc": "Buat tugas, berikan ke marketplace, dan pantau pelaksana.",
+  "roleExecutorTitle": "Pelaksana Tugas",
+  "roleExecutorDesc": "Ambil tugas orang lain, kerjakan, dan dapat koin & reputasi.",
+  "takeTabHeader": "Marketplace Tugas",
+  "takeTabSubtitle": "Sebagai pelaksana — ambil tugas yang dibuat pembuat lain.",
+  "createTabHeader": "Buat & Berikan Tugas",
+  "createTabSubtitle": "Sebagai pembuat — isi detail tugas lalu publikasikan ke marketplace.",
+  "myTasksHeader": "Tugas Saya",
+  "myTasksSubtitle": "Tugas yang Anda buat (pembuat) dan yang Anda kerjakan (pelaksana).",
+  "flowStepCreate": "1. Buat tugas",
+  "flowStepGive": "2. Berikan ke marketplace",
+  "flowStepTake": "3. Pelaksana ambil tugas",
+  "flowStepComplete": "4. Selesai & dapat reward",
+  "giveTaskAction": "Berikan Tugas",
+  "takeTaskAction": "Ambil Tugas",
+  "copperCoins": "Koin Tembaga",
+  "checkin": "Check-in",
+  "checkinDone": "Sudah check-in",
+  "checkinScreenTitle": "Check-in Harian",
+  "checkinScreenSubtitle": "Dapatkan {coins} koin tembaga setiap hari saat check-in",
+  "@checkinScreenSubtitle": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "checkinScreenPrompt": "Ketuk tombol di bawah untuk check-in hari ini. Check-in berikutnya tersedia besok.",
+  "checkinScreenAction": "Check-in Sekarang",
+  "checkinScreenRewardHint": "Reward hari ini: +{coins} koin tembaga",
+  "@checkinScreenRewardHint": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "checkinScreenAlreadyDone": "Anda sudah check-in hari ini. Kembali besok untuk check-in berikutnya.",
+  "checkinScreenSuccessHint": "Check-in berhasil untuk hari ini. Kembali besok untuk check-in berikutnya.",
+  "checkinContinueHome": "Lanjut ke Beranda",
+  "publishFeeHint": "Biaya publikasi: {fee} koin tembaga",
+  "@publishFeeHint": {
+    "placeholders": {
+      "fee": {"type": "int"}
+    }
+  },
+  "publishInsufficient": "Koin tidak cukup. Dapatkan koin lewat check-in harian atau menyelesaikan tugas.",
+  "reputation": "Reputasi",
+  "reputationMinHint": "Minimum reputasi untuk ambil tugas: {min} poin",
+  "@reputationMinHint": {
+    "placeholders": {
+      "min": {"type": "int"}
+    }
+  },
+  "rateTask": "Beri Penilaian",
+  "rateSubmitted": "Penilaian berhasil disimpan",
+  "ratePrompt": "Pelaksana sudah menyelesaikan tugas ini. Beri penilaian 1–5 bintang untuk hasil kerjanya.",
+  "rateNow": "Nilai Sekarang",
+  "rateExecutorHint": "Penilaian mempengaruhi reputasi pelaksana.",
+  "ratingLabel": "Penilaian Pelaksana",
+  "needsRating": "Perlu dinilai",
+  "filterAllStatus": "Semua status",
+  "filterNeedsRating": "Perlu dinilai",
+  "filterDraft": "Draft",
+  "filterActive": "Aktif",
+  "filterCompleted": "Selesai",
+  "timelineTitle": "Riwayat Status",
+  "timelineEmpty": "Belum ada riwayat status.",
+  "timelineCreated": "Tugas dibuat",
+  "editDraft": "Edit Draft",
+  "draftUpdated": "Draft tugas berhasil diperbarui",
+  "reputationHistory": "Riwayat Reputasi",
+  "reputationHistoryEmpty": "Belum ada perubahan reputasi.",
+  "markAllRead": "Tandai semua dibaca",
+  "repTaskComplete": "Tugas diselesaikan",
+  "repGoodRating": "Penilaian bagus",
+  "repBadRating": "Penilaian buruk",
+  "repTaskFailed": "Tugas gagal / dilepas",
+  "repAdminAdjust": "Penyesuaian admin",
+  "rulesTitle": "Alur Pembuatan & Pemberian Tugas",
+  "rulesCoins": "Pembuat tugas: gunakan koin tembaga untuk mempublikasikan tugas. Pelaksana: dapat koin dari check-in harian dan menyelesaikan tugas.",
+  "rulesReputation": "Pelaksana mendapat reputasi saat menyelesaikan tugas. Reputasi turun jika gagal/lepas tugas atau dapat penilaian buruk.",
+  "rulesBlock": "Pelaksana dengan reputasi di bawah batas minimum tidak bisa mengambil tugas baru.",
+  "logout": "Keluar",
+  "refresh": "Refresh",
+  "cancel": "Batal",
+  "save": "Simpan",
+  "understand": "Mengerti",
+  "retry": "Coba lagi",
+  "loading": "Memuat...",
+  "loadCoinsFailed": "Gagal memuat data koin: {error}",
+  "@loadCoinsFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "checkinSuccess": "Check-in berhasil! +{coins} koin",
+  "@checkinSuccess": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "loadAvailableTasksFailed": "Gagal memuat tugas tersedia",
+  "loadingAvailableTasks": "Memuat tugas tersedia...",
+  "searchTaskHint": "Cari judul tugas...",
+  "category": "Kategori",
+  "all": "Semua",
+  "statusDraft": "Draft",
+  "statusPublished": "Dipublikasikan",
+  "statusTaken": "Diambil",
+  "statusInProgress": "Dikerjakan",
+  "statusSubmitted": "Menunggu Konfirmasi",
+  "statusCompleted": "Selesai",
+  "statusCancelled": "Dibatalkan",
+  "statusExpired": "Kedaluwarsa",
+  "categoryGeneral": "Umum",
+  "categoryDelivery": "Antar Barang",
+  "categoryDeliveryShort": "Antar",
+  "categoryHelper": "Bantuan",
+  "categoryTech": "Teknisi",
+  "categoryErrands": "Belanja / Errands",
+  "noAvailableTasks": "Belum ada tugas tersedia",
+  "noAvailableTasksSubtitle": "Pembuat tugas lain belum mempublikasikan tugas. Coba buat & berikan tugas sendiri.",
+  "scopeAll": "Semua",
+  "scopeCreated": "Tugas Saya Buat",
+  "scopeExecuting": "Tugas Saya Kerjakan",
+  "needsRatingBanner": "{count} tugas selesai perlu dinilai. Penilaian buruk menurunkan reputasi pelaksana.",
+  "@needsRatingBanner": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "loadingOrders": "Memuat pesanan...",
+  "noOrders": "Belum ada pesanan",
+  "noOrdersSubtitle": "Tugas yang Anda buat atau kerjakan sebagai pelaksana akan muncul di sini.",
+  "taskCreatedPublished": "Tugas berhasil dibuat dan dipublikasikan",
+  "taskDraftSaved": "Draft tugas berhasil disimpan",
+  "createTaskFailed": "Gagal membuat tugas",
+  "taskInfo": "Informasi Tugas",
+  "taskTitle": "Judul tugas",
+  "description": "Deskripsi",
+  "requiredField": "Wajib diisi",
+  "invalidNumber": "Angka tidak valid",
+  "serviceDetails": "Detail Layanan",
+  "rewardLabel": "Imbalan (Rp)",
+  "location": "Lokasi",
+  "publication": "Publikasi",
+  "publishImmediately": "Langsung publikasikan",
+  "publishImmediatelyHint": "Nonaktifkan untuk simpan sebagai draft dulu",
+  "createAndPublish": "Buat & Publish",
+  "saveDraft": "Simpan Draft",
+  "orderDetail": "Detail Pesanan",
+  "loadingOrderDetail": "Memuat detail pesanan...",
+  "orderNotFound": "Pesanan tidak ditemukan",
+  "openChat": "Chat dengan Lawan Tugas",
+  "orderChatTitle": "Chat Pesanan",
+  "loadingChat": "Memuat chat...",
+  "chatEmptyTitle": "Belum ada pesan",
+  "chatEmptySubtitle": "Mulai percakapan dengan pembuat atau pelaksana tugas.",
+  "chatInputHint": "Tulis pesan...",
+  "chatAttachImage": "Kirim gambar",
+  "chatImageFailed": "Gagal mengirim gambar",
+  "chatMonitorTitle": "Riwayat Chat",
+  "chatMonitorEmpty": "Belum ada pesan chat untuk pesanan ini.",
+  "chatMessageImage": "[Gambar]",
+  "chatSectionTitle": "Komunikasi",
+  "chatUnavailableDraft": "Chat tersedia setelah tugas dipublikasikan dan diambil pelaksana.",
+  "chatUnavailablePublished": "Chat tersedia setelah pelaksana mengambil tugas ini.",
+  "chatUnavailableCancelled": "Chat tidak tersedia karena pesanan dibatalkan.",
+  "chatUnavailableExpired": "Chat tidak tersedia karena pesanan kedaluwarsa.",
+  "orderNumber": "Nomor",
+  "title": "Judul",
+  "reward": "Imbalan",
+  "rewardAmountValue": "Rp {amount}",
+  "@rewardAmountValue": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "involvedParties": "Pihak Terlibat",
+  "creator": "Pembuat",
+  "executor": "Pelaksana",
+  "noExecutorYet": "Belum ada",
+  "yourRole": "Peran Anda",
+  "cancelReason": "Alasan Batal",
+  "commentOptional": "Komentar (opsional)",
+  "submitRating": "Kirim Penilaian",
+  "loadingProfile": "Memuat profil...",
+  "editProfile": "Edit Profil",
+  "phoneNumber": "Nomor telepon",
+  "profileUpdated": "Profil berhasil diperbarui",
+  "myAccount": "Akun Saya",
+  "statistics": "Statistik",
+  "publishFeeStat": "Biaya publikasi: {fee} koin",
+  "@publishFeeStat": {
+    "placeholders": {
+      "fee": {"type": "int"}
+    }
+  },
+  "taskRewardStat": "Reward selesai tugas: +{coins} koin",
+  "@taskRewardStat": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "reputationPerTask": "Reputasi per tugas: +{points} poin",
+  "@reputationPerTask": {
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+  "completedTasksStat": "Tugas selesai: {count}",
+  "@completedTasksStat": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "lastCheckinStat": "Check-in terakhir: {date}",
+  "@lastCheckinStat": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "coinHistory": "Riwayat Koin",
+  "noTransactions": "Belum ada transaksi",
+  "notifications": "Notifikasi",
+  "markRead": "Tandai dibaca ({count})",
+  "@markRead": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "noNotifications": "Belum ada notifikasi",
+  "loadCoinsProfileFailed": "Gagal memuat koin: {error}",
+  "@loadCoinsProfileFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "serverConnectFailed": "Gagal terhubung ke server. Pastikan backend berjalan.",
+  "loadingCoinsReputation": "Memuat koin & reputasi...",
+  "lowReputationTitle": "Reputasi Terlalu Rendah",
+  "abandonTask": "Lepas tugas",
+  "cancelOrder": "Batalkan pesanan",
+  "abandonWarning": "Melepas tugas akan menurunkan reputasi Anda.",
+  "abandonReasonOptional": "Alasan melepas tugas (opsional)",
+  "cancelReasonOptional": "Alasan pembatalan (opsional)",
+  "actionPublish": "Publikasikan",
+  "actionCancel": "Batalkan",
+  "actionTake": "Ambil Tugas",
+  "actionStart": "Mulai Kerjakan",
+  "actionSubmit": "Ajukan Selesai",
+  "actionConfirm": "Konfirmasi Selesai",
+  "actionAbandon": "Lepas Tugas",
+  "actionPublishMessage": "Publikasikan tugas ke marketplace? Biaya publikasi: {fee} koin tembaga.",
+  "@actionPublishMessage": {
+    "placeholders": {
+      "fee": {"type": "int"}
+    }
+  },
+  "actionCancelMessage": "Batalkan pesanan ini?",
+  "actionTakeMessage": "Ambil tugas ini dan kerjakan sebagai pelaksana?",
+  "actionStartMessage": "Mulai mengerjakan tugas ini?",
+  "actionSubmitMessage": "Ajukan tugas selesai? Pembuat tugas perlu mengonfirmasi sebelum reward diberikan.",
+  "actionConfirmMessage": "Konfirmasi tugas selesai? Pelaksana mendapat +{coins} koin dan +{rep} reputasi.",
+  "@actionConfirmMessage": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "rep": {"type": "int"}
+    }
+  },
+  "actionAbandonMessage": "Lepas tugas ini? Reputasi Anda akan menurun.",
+  "successPublished": "Tugas \"{title}\" dipublikasikan (-{fee} koin)",
+  "@successPublished": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "fee": {"type": "int"}
+    }
+  },
+  "successCancelled": "Pesanan dibatalkan",
+  "successTaken": "Tugas \"{title}\" berhasil diambil",
+  "@successTaken": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "successStarted": "Tugas mulai dikerjakan",
+  "successSubmitted": "Pengajuan selesai terkirim. Menunggu konfirmasi pembuat tugas.",
+  "successConfirmed": "Tugas dikonfirmasi selesai. Reward diberikan ke pelaksana.",
+  "successCompleted": "Tugas selesai! +{coins} koin, +{rep} reputasi",
+  "@successCompleted": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "rep": {"type": "int"}
+    }
+  },
+  "successAbandoned": "Tugas dilepas. Reputasi berkurang.",
+  "reputationBlockedMessage": "Reputasi Anda ({score}) di bawah minimum {min} poin. Selesaikan tugas dengan baik atau check-in harian untuk memulihkan reputasi.",
+  "@reputationBlockedMessage": {
+    "placeholders": {
+      "score": {"type": "int"},
+      "min": {"type": "int"}
+    }
+  },
+  "publishBlockedMessage": "Koin tembaga tidak cukup ({current}/{fee}). Check-in harian (+{dailyReward} koin) atau selesaikan tugas (+{taskReward} koin).",
+  "@publishBlockedMessage": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "fee": {"type": "int"},
+      "dailyReward": {"type": "int"},
+      "taskReward": {"type": "int"}
+    }
+  },
+  "roleCreatorAndExecutor": "Pembuat & Pelaksana",
+  "roleCreator": "Pembuat tugas",
+  "roleExecutor": "Pelaksana",
+  "language": "Bahasa",
+  "languageId": "Bahasa Indonesia",
+  "languageZh": "中文 (简体)",
+  "appearance": "Tampilan",
+  "themeLight": "Terang",
+  "themeDark": "Gelap",
+  "themeSystem": "Sistem",
+  "themeModeHint": "Pilih mode terang, gelap, atau ikuti pengaturan perangkat.",
+  "txRegisterBonus": "Bonus Registrasi",
+  "txDailyCheckin": "Check-in Harian",
+  "txPublishFee": "Biaya Publikasi Tugas",
+  "txTaskReward": "Reward Menyelesaikan Tugas",
+  "txAdminAdjust": "Penyesuaian Admin",
+  "notifOrderTakenTitle": "Tugas diambil",
+  "notifOrderSubmittedTitle": "Pengajuan selesai",
+  "notifOrderCompletedTitle": "Tugas selesai",
+  "notifRewardTitle": "Reward diterima",
+  "notifOrderRatedTitle": "Penilaian diterima",
+  "notifOrderTakenContent": "Tugas \"{title}\" telah diambil pelaksana.",
+  "@notifOrderTakenContent": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "notifOrderSubmittedContent": "Pelaksana mengajukan penyelesaian tugas \"{title}\". Silakan konfirmasi.",
+  "@notifOrderSubmittedContent": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "notifOrderCompletedContent": "Tugas \"{title}\" selesai. Silakan beri penilaian.",
+  "@notifOrderCompletedContent": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "notifRewardContent": "Anda mendapat +{coins} koin dan +{rep} reputasi.",
+  "@notifRewardContent": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "rep": {"type": "int"}
+    }
+  },
+  "notifOrderRatedContent": "Pembuat tugas memberi skor {score}/5 untuk tugas \"{title}\".",
+  "@notifOrderRatedContent": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "score": {"type": "int"}
+    }
+  },
+  "sessionExpired": "Sesi login habis, silakan masuk kembali",
+  "invalidResponse": "Respons server tidak valid",
+  "requestFailed": "Permintaan gagal"
+}
