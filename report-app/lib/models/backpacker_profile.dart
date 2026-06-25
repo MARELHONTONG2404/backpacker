@@ -1,3 +1,5 @@
+import '../l10n/app_localizations.dart';
+
 class BackpackerProfile {
   BackpackerProfile({
     required this.copperCoins,
@@ -56,7 +58,7 @@ class BackpackerProfile {
       copperCoins: _readInt(json['copperCoins']),
       reputationScore: _readInt(json['reputationScore'], defaultValue: 100),
       publishFee: _readInt(json['publishFee'], defaultValue: 5),
-      dailyCheckinReward: _readInt(json['dailyCheckinReward'], defaultValue: 2),
+      dailyCheckinReward: _readInt(json['dailyCheckinReward'], defaultValue: 5),
       canCheckinToday: _readBool(json['canCheckinToday'], defaultValue: true),
       canAffordPublish: _readBool(json['canAffordPublish']),
       canTakeTask: _readBool(json['canTakeTask'], defaultValue: true),
@@ -69,11 +71,13 @@ class BackpackerProfile {
     );
   }
 
-  String get reputationBlockedMessage =>
-      'Reputasi Anda ($reputationScore) di bawah minimum $minReputationToTake poin. '
-      'Selesaikan tugas dengan baik atau check-in harian untuk memulihkan reputasi.';
+  String reputationBlockedMessage(AppLocalizations l10n) =>
+      l10n.reputationBlockedMessage(reputationScore, minReputationToTake);
 
-  String get publishBlockedMessage =>
-      'Koin tembaga tidak cukup ($copperCoins/$publishFee). '
-      'Check-in harian (+$dailyCheckinReward koin) atau selesaikan tugas (+${taskRewardCoins ?? 3} koin).';
+  String publishBlockedMessage(AppLocalizations l10n) => l10n.publishBlockedMessage(
+        copperCoins,
+        publishFee,
+        dailyCheckinReward,
+        taskRewardCoins ?? 3,
+      );
 }

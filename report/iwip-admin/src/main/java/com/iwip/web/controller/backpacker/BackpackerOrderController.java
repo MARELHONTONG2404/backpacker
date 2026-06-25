@@ -93,13 +93,27 @@ public class BackpackerOrderController extends BaseController
         }
     }
 
-    @PostMapping("/{orderId}/complete")
-    public AjaxResult complete(@PathVariable Long orderId)
+    @PostMapping("/{orderId}/submit")
+    public AjaxResult submit(@PathVariable Long orderId)
     {
         try
         {
-            BizOrder completed = bizOrderService.completeOrder(orderId, getUserId(), getUsername());
-            return AjaxResult.success("Tugas berhasil diselesaikan", completed);
+            BizOrder submitted = bizOrderService.submitOrder(orderId, getUserId(), getUsername());
+            return AjaxResult.success("Pengajuan selesai terkirim", submitted);
+        }
+        catch (ServiceException ex)
+        {
+            return error(ex.getMessage());
+        }
+    }
+
+    @PostMapping("/{orderId}/confirm")
+    public AjaxResult confirm(@PathVariable Long orderId)
+    {
+        try
+        {
+            BizOrder confirmed = bizOrderService.confirmOrder(orderId, getUserId(), getUsername());
+            return AjaxResult.success("Tugas dikonfirmasi selesai", confirmed);
         }
         catch (ServiceException ex)
         {

@@ -13,6 +13,7 @@ export default {
   completedAt: 'Selesai',
   detailTitle: 'Detail Pesanan',
   detail: 'Detail',
+  mobileSwipeHint: 'Geser kartu untuk melihat detail. Ketuk kartu untuk membuka.',
   description: 'Deskripsi',
   cancelReason: 'Alasan batal',
   profileListTitle: 'Profil Backpacker',
@@ -40,5 +41,8 @@ export default {
   adjustReputation: 'Sesuaikan Reputasi',
   adjustCoinsHint: 'Positif = tambah koin, negatif = kurangi koin',
   adjustReputationHint: 'Positif = tambah reputasi, negatif = kurangi reputasi',
-  adjustSuccess: 'Penyesuaian berhasil disimpan'
+  adjustSuccess: 'Penyesuaian berhasil disimpan',
+  chatMonitorTitle: 'Riwayat Chat',
+  chatMonitorEmpty: 'Belum ada pesan chat untuk pesanan ini.',
+  chatMessageImage: '[Gambar]'
 }

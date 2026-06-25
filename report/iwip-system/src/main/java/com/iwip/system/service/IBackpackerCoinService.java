@@ -17,6 +17,8 @@ public interface IBackpackerCoinService
 
     void chargePublishFee(Long userId, Long orderId);
 
+    void refundPublishFee(Long userId, Long orderId, String remark);
+
     List<BizCoinTransaction> getRecentTransactions(Long userId, int limit);
 
     boolean canAffordPublish(Long userId);

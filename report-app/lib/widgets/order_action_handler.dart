@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+import '../l10n/l10n_extension.dart';
+import '../l10n/server_message_localizer.dart';
 import '../models/backpacker_profile.dart';
 import '../models/order.dart';
 import '../services/api_service.dart';
+import 'common_widgets.dart';
 
 /// Menjalankan aksi lifecycle pesanan dengan dialog konfirmasi.
 class OrderActionHandler {
@@ -13,6 +17,8 @@ class OrderActionHandler {
     required OrderAction action,
     BackpackerProfile? profile,
   }) async {
+    final l10n = context.l10n;
+
     if (action == OrderAction.take && profile != null && !profile.canTakeTask) {
       await _showLowReputationDialog(context, profile);
       return null;
@@ -23,7 +29,7 @@ class OrderActionHandler {
         !profile.canAffordPublish) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(profile.publishBlockedMessage)),
+          SnackBar(content: Text(profile.publishBlockedMessage(l10n))),
         );
       }
       return null;
@@ -39,21 +45,25 @@ class OrderActionHandler {
     }
 
     try {
+      var workingOrder = order;
+      if (action == OrderAction.submit && workingOrder.status == 'TAKEN') {
+        workingOrder = await api.takeOrderAction(workingOrder.orderId, 'start');
+      }
       final updated = await api.takeOrderAction(
-        order.orderId,
+        workingOrder.orderId,
         action.apiKey,
         cancelReason: cancelReason,
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_successMessage(action, updated, profile))),
+          SnackBar(content: Text(_successMessage(l10n, action, updated, profile))),
         );
       }
       return updated;
     } on ApiException catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
+          SnackBar(content: Text(localizeServerMessage(l10n, error.message))),
         );
       }
       return null;
@@ -64,18 +74,12 @@ class OrderActionHandler {
     BuildContext context,
     BackpackerProfile profile,
   ) async {
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reputasi Terlalu Rendah'),
-        content: Text(profile.reputationBlockedMessage),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Mengerti'),
-          ),
-        ],
-      ),
+    final l10n = context.l10n;
+    await showAppInfoDialog(
+      context,
+      title: l10n.lowReputationTitle,
+      message: profile.reputationBlockedMessage(l10n),
+      actionLabel: l10n.understand,
     );
   }
 
@@ -83,81 +87,51 @@ class OrderActionHandler {
     BuildContext context,
     OrderAction action,
     BackpackerProfile? profile,
-  ) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(action.label),
-        content: Text(action.message(profile)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(action.label)),
-        ],
-      ),
+  ) {
+    final l10n = context.l10n;
+    return showAppConfirmDialog(
+      context,
+      title: action.label(l10n),
+      message: action.message(l10n, profile),
+      confirmLabel: action.label(l10n),
+      cancelLabel: l10n.cancel,
     );
-    return result ?? false;
   }
 
-  static Future<String?> _askCancelReason(BuildContext context, OrderAction action) async {
-    final controller = TextEditingController();
+  static Future<String?> _askCancelReason(BuildContext context, OrderAction action) {
+    final l10n = context.l10n;
     final isAbandon = action == OrderAction.abandon;
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isAbandon ? 'Lepas tugas' : 'Batalkan pesanan'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (isAbandon)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: Text(
-                  'Melepas tugas akan menurunkan reputasi Anda.',
-                  style: TextStyle(fontSize: 13),
-                ),
-              ),
-            TextField(
-              controller: controller,
-              maxLines: 3,
-              decoration: InputDecoration(
-                labelText: isAbandon ? 'Alasan melepas tugas (opsional)' : 'Alasan pembatalan (opsional)',
-                border: const OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(isAbandon ? 'Lepas tugas' : 'Batalkan pesanan'),
-          ),
-        ],
-      ),
+    return showAppInputDialog(
+      context,
+      title: isAbandon ? l10n.abandonTask : l10n.cancelOrder,
+      warning: isAbandon ? l10n.abandonWarning : null,
+      hint: isAbandon ? l10n.abandonReasonOptional : l10n.cancelReasonOptional,
+      confirmLabel: isAbandon ? l10n.abandonTask : l10n.cancelOrder,
+      cancelLabel: l10n.cancel,
     );
-    controller.dispose();
-    return result;
   }
 
   static String _successMessage(
+    AppLocalizations l10n,
     OrderAction action,
     OrderItem order,
     BackpackerProfile? profile,
   ) {
     switch (action) {
       case OrderAction.publish:
-        return 'Tugas "${order.title}" dipublikasikan (-${profile?.publishFee ?? 5} koin)';
+        return l10n.successPublished(order.title, profile?.publishFee ?? 5);
       case OrderAction.cancel:
-        return 'Pesanan dibatalkan';
+        return l10n.successCancelled;
       case OrderAction.take:
-        return 'Tugas "${order.title}" berhasil diambil';
+        return l10n.successTaken(order.title);
       case OrderAction.start:
-        return 'Tugas mulai dikerjakan';
-      case OrderAction.complete:
-        return 'Tugas selesai! +${profile?.taskRewardCoins ?? 3} koin, +${profile?.reputationTaskComplete ?? 5} reputasi';
+        return l10n.successStarted;
+      case OrderAction.submit:
+        return l10n.successSubmitted;
+      case OrderAction.confirm:
+        return l10n.successConfirmed;
       case OrderAction.abandon:
-        return 'Tugas dilepas. Reputasi berkurang.';
+        return l10n.successAbandoned;
     }
   }
 }
@@ -172,7 +146,9 @@ class OrderActionButtons extends StatelessWidget {
     required this.onChanged,
     this.profile,
     this.marketplace = false,
+    this.myOrders = false,
     this.compact = false,
+    this.fullWidth = false,
   });
 
   final OrderItem order;
@@ -181,46 +157,76 @@ class OrderActionButtons extends StatelessWidget {
   final VoidCallback onChanged;
   final BackpackerProfile? profile;
   final bool marketplace;
+  final bool myOrders;
   final bool compact;
+  final bool fullWidth;
 
   @override
   Widget build(BuildContext context) {
-    final actions = order.availableActions(userId, marketplace: marketplace);
+    final l10n = context.l10n;
+    final actions = order.availableActions(
+      userId,
+      marketplace: marketplace,
+      myOrders: myOrders,
+    );
     if (actions.isEmpty) return const SizedBox.shrink();
+
+    Widget buildButton(OrderAction action) {
+      final blockedTake = action == OrderAction.take &&
+          profile != null &&
+          !profile!.canTakeTask;
+
+      if (action.isPrimary) {
+        final button = FilledButton(
+          style: FilledButton.styleFrom(
+            minimumSize: fullWidth ? const Size.fromHeight(44) : null,
+            backgroundColor: blockedTake
+                ? Theme.of(context).colorScheme.errorContainer
+                : null,
+            foregroundColor: blockedTake
+                ? Theme.of(context).colorScheme.onErrorContainer
+                : null,
+          ),
+          onPressed: blockedTake
+              ? () => OrderActionHandler.run(
+                    context,
+                    api: api,
+                    order: order,
+                    action: action,
+                    profile: profile,
+                  )
+              : () => _handle(context, action),
+          child: Text(action.label(l10n)),
+        );
+        return fullWidth ? SizedBox(width: double.infinity, child: button) : button;
+      }
+
+      final button = OutlinedButton(
+        style: fullWidth
+            ? OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44))
+            : null,
+        onPressed: () => _handle(context, action),
+        child: Text(action.label(l10n)),
+      );
+      return fullWidth ? SizedBox(width: double.infinity, child: button) : button;
+    }
+
+    if (fullWidth) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final action in actions) ...[
+            buildButton(action),
+            if (action != actions.last) const SizedBox(height: 8),
+          ],
+        ],
+      );
+    }
 
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: actions.map((action) {
-        final blockedTake = action == OrderAction.take &&
-            profile != null &&
-            !profile!.canTakeTask;
-
-        if (action.isPrimary) {
-          return FilledButton(
-            style: blockedTake
-                ? FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                    foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
-                  )
-                : null,
-            onPressed: blockedTake
-                ? () => OrderActionHandler.run(
-                      context,
-                      api: api,
-                      order: order,
-                      action: action,
-                      profile: profile,
-                    )
-                : () => _handle(context, action),
-            child: Text(compact ? action.label : action.label),
-          );
-        }
-        return OutlinedButton(
-          onPressed: () => _handle(context, action),
-          child: Text(action.label),
-        );
-      }).toList(),
+      children: actions.map(buildButton).toList(),
     );
   }
 

@@ -12,8 +12,15 @@ class UserProfile {
   final String? phonenumber;
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
+    int readInt(dynamic value) {
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
     return UserProfile(
-      userId: json['userId'] as int? ?? 0,
+      userId: readInt(json['userId']),
       username: json['username'] as String? ?? '',
       nickName: json['nickName'] as String? ?? '',
       phonenumber: json['phonenumber'] as String?,

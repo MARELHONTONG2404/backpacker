@@ -48,11 +48,6 @@ export const constantRoutes = [
     hidden: true
   },
   {
-    path: "/:pathMatch(.*)*",
-    component: () => import('@/views/error/404'),
-    hidden: true
-  },
-  {
     path: '/401',
     component: () => import('@/views/error/401'),
     hidden: true
@@ -77,16 +72,16 @@ export const constantRoutes = [
     meta: { title: 'Kunci Layar', titleKey: 'menu.lock' }
   },
   {
-    path: '/user',
+    path: '/account',
     component: Layout,
     hidden: true,
     redirect: 'noredirect',
     children: [
       {
-        path: 'profile/:activeTab?',
+        path: 'center/:activeTab?',
         component: () => import('@/views/system/user/profile/index'),
-        name: 'Profile',
-        meta: { title: 'Profil Saya', titleKey: 'menu.user', icon: 'user' }
+        name: 'AdminUserProfile',
+        meta: { title: 'Profil Admin', titleKey: 'menu.admin_profile', icon: 'user' }
       }
     ]
   }

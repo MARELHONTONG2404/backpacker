@@ -13,6 +13,7 @@ export default {
   completedAt: '完成时间',
   detailTitle: '订单详情',
   detail: '详情',
+  mobileSwipeHint: '点击卡片查看订单详情。',
   description: '描述',
   cancelReason: '取消原因',
   profileListTitle: 'Backpacker资料',
@@ -40,5 +41,8 @@ export default {
   adjustReputation: '调整信誉',
   adjustCoinsHint: '正数增加，负数减少',
   adjustReputationHint: '正数增加，负数减少',
-  adjustSuccess: '调整已保存'
+  adjustSuccess: '调整已保存',
+  chatMonitorTitle: '聊天记录',
+  chatMonitorEmpty: '该订单暂无聊天消息。',
+  chatMessageImage: '[图片]'
 }

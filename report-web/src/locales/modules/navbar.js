@@ -2,7 +2,7 @@ export default {
   themeMode: 'Mode tema',
   layoutSize: 'Ukuran layout',
   notifications: 'Notifikasi',
-  profile: 'Profil',
+  profile: 'Profil Admin',
   layoutSettings: 'Pengaturan layout',
   lockScreen: 'Kunci layar',
   logout: 'Keluar',

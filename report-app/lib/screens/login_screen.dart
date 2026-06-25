@@ -3,14 +3,15 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
-import '../config/app_strings.dart';
+import '../l10n/l10n_extension.dart';
 import '../services/api_service.dart';
 import '../services/auth_storage.dart';
 import '../theme/app_theme.dart';
+import '../navigation/post_auth_navigation.dart';
 import '../widgets/common_widgets.dart';
+import '../widgets/login_task_worker_animation.dart';
 import '../widgets/system_auth_shell.dart';
 import 'forgot_password_screen.dart';
-import 'home_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -55,7 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
       _rememberMe = saved.rememberMe;
       if (saved.rememberMe) {
         _usernameController.text = saved.username;
-        _passwordController.text = saved.password;
       }
     });
   }
@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
           _captchaUuid = null;
           _captchaBytes = null;
         });
-        showAppMessage(context, AppStrings.captchaLoadFailed);
+        showAppMessage(context, context.l10n.captchaLoadFailed);
       }
     } finally {
       if (mounted) setState(() => _captchaLoading = false);
@@ -95,9 +95,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit() async {
+    final l10n = context.l10n;
     if (!_formKey.currentState!.validate()) return;
     if (_captchaEnabled && (_captchaUuid == null || _captchaUuid!.isEmpty || _captchaBytes == null)) {
-      showAppMessage(context, 'Kode verifikasi belum siap. Ketuk gambar untuk memuat ulang.');
+      showAppMessage(context, l10n.captchaNotReady);
       await _loadCaptcha();
       return;
     }
@@ -108,7 +109,6 @@ class _LoginScreenState extends State<LoginScreen> {
       await _storage.saveRememberMe(
         rememberMe: _rememberMe,
         username: username,
-        password: password,
       );
       await widget.api.login(
         username: username,
@@ -117,15 +117,13 @@ class _LoginScreenState extends State<LoginScreen> {
         uuid: _captchaEnabled ? _captchaUuid : null,
       );
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => HomeScreen(api: widget.api)),
-      );
+      await PostAuthNavigation.open(context, widget.api, fromLogin: true);
     } on ApiException catch (error) {
-      if (mounted) showAppMessage(context, error.message);
+      if (mounted) showLocalizedAppMessage(context, error.message);
       if (_captchaEnabled && mounted) await _loadCaptcha();
     } catch (_) {
       if (mounted) {
-        showAppMessage(context, 'Gagal terhubung ke server. Pastikan backend berjalan.');
+        showAppMessage(context, l10n.serverConnectFailed);
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -142,11 +140,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final isPhone = MediaQuery.sizeOf(context).width <= 480;
+    final fieldGap = isPhone ? 14.0 : 18.0;
+    final animationHeight = isPhone ? 96.0 : 156.0;
+
     return SystemAuthShell(
-      header: const SystemAuthHeader(
-        title: AppStrings.loginTitle,
-        tagline: AppStrings.loginTagline,
-        description: AppStrings.loginDescription,
+      header: Column(
+        children: [
+          SystemAuthHeader(
+            title: l10n.loginTitle,
+            tagline: l10n.loginTagline,
+            description: l10n.loginDescription,
+          ),
+          if (!isPhone || MediaQuery.sizeOf(context).height >= 640) ...[
+            SizedBox(height: isPhone ? 8 : 12),
+            LoginTaskWorkerAnimation(
+              embedded: true,
+              height: animationHeight,
+            ),
+          ],
+        ],
       ),
       child: Form(
         key: _formKey,
@@ -155,150 +169,193 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             if (_captchaEnabled)
               Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: EdgeInsets.only(bottom: isPhone ? 10 : 14),
                 child: Text(
-                  AppStrings.captchaHint,
+                  l10n.captchaHint,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppColors.textSecondary.withValues(alpha: 0.95),
-                    fontSize: 11,
+                    fontSize: isPhone ? 12 : 11,
                     height: 1.4,
                   ),
                 ),
               ),
             SystemAuthField(
               controller: _usernameController,
-              hint: AppStrings.username,
+              hint: l10n.username,
               prefixIcon: Icons.person_outline,
+              keyboardType: TextInputType.text,
               validator: (value) =>
-                  value == null || value.trim().isEmpty ? AppStrings.usernameRequired : null,
+                  value == null || value.trim().isEmpty ? l10n.usernameRequired : null,
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: fieldGap),
             SystemAuthField(
               controller: _passwordController,
-              hint: AppStrings.password,
+              hint: l10n.password,
               prefixIcon: Icons.lock_outline,
               obscureText: _obscurePassword,
               onFieldSubmitted: (_) => _submit(),
               suffixIcon: IconButton(
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                constraints: BoxConstraints(
+                  minWidth: isPhone ? 44 : 36,
+                  minHeight: isPhone ? 44 : 36,
+                ),
                 onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                 icon: Icon(
                   _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                  size: 18,
+                  size: isPhone ? 22 : 18,
                   color: AppColors.textSecondary,
                 ),
               ),
               validator: (value) =>
-                  value == null || value.isEmpty ? AppStrings.passwordRequired : null,
+                  value == null || value.isEmpty ? l10n.passwordRequired : null,
             ),
             if (_captchaEnabled) ...[
-              const SizedBox(height: 18),
+              SizedBox(height: fieldGap),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    flex: 63,
+                    flex: isPhone ? 58 : 63,
                     child: SystemAuthField(
                       controller: _captchaController,
-                      hint: AppStrings.captcha,
+                      hint: l10n.captcha,
                       prefixIcon: Icons.verified_outlined,
                       validator: (value) =>
-                          value == null || value.trim().isEmpty ? AppStrings.captchaRequired : null,
+                          value == null || value.trim().isEmpty ? l10n.captchaRequired : null,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: isPhone ? 10 : 12),
                   Expanded(
-                    flex: 37,
+                    flex: isPhone ? 42 : 37,
                     child: _CaptchaImage(
                       loading: _captchaLoading,
                       bytes: _captchaBytes,
+                      height: isPhone ? 48 : 40,
                       onTap: _captchaLoading ? null : _loadCaptcha,
                     ),
                   ),
                 ],
               ),
             ],
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: _rememberMe,
-                    activeColor: AppColors.primary,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    onChanged: _loading ? null : (v) => setState(() => _rememberMe = v ?? false),
-                  ),
+            SizedBox(height: fieldGap),
+            InkWell(
+              onTap: _loading ? null : () => setState(() => _rememberMe = !_rememberMe),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: isPhone ? 6 : 0),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: isPhone ? 28 : 24,
+                      height: isPhone ? 28 : 24,
+                      child: Checkbox(
+                        value: _rememberMe,
+                        activeColor: AppColors.primary,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onChanged: _loading ? null : (v) => setState(() => _rememberMe = v ?? false),
+                      ),
+                    ),
+                    SizedBox(width: isPhone ? 10 : 8),
+                    Text(
+                      l10n.remember,
+                      style: TextStyle(
+                        color: AppColors.textRegular,
+                        fontSize: isPhone ? 15 : 14,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _loading ? null : () => setState(() => _rememberMe = !_rememberMe),
-                  child: const Text(AppStrings.remember, style: TextStyle(color: AppColors.textRegular, fontSize: 14)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 25),
-            SizedBox(
-              height: 40,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                ),
-                child: _loading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(_loading ? AppStrings.submitting : AppStrings.submit),
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed: _loading
-                      ? null
-                      : () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => ForgotPasswordScreen(api: widget.api)),
-                          );
-                        },
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text('Lupa password?'),
-                ),
-                TextButton(
-                  onPressed: _loading
-                      ? null
-                      : () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => RegisterScreen(api: widget.api)),
-                          );
-                        },
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text(AppStrings.registerLink),
-                ),
-              ],
+            SizedBox(height: isPhone ? 20 : 25),
+            SystemAuthSubmitButton(
+              onPressed: _submit,
+              label: _loading ? l10n.submitting : l10n.submit,
+              loading: _loading,
             ),
+            SizedBox(height: isPhone ? 16 : 12),
+            if (isPhone)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextButton(
+                    onPressed: _loading
+                        ? null
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => ForgotPasswordScreen(api: widget.api)),
+                            );
+                          },
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                    child: Text(l10n.forgotPasswordLink),
+                  ),
+                  TextButton(
+                    onPressed: _loading
+                        ? null
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => RegisterScreen(api: widget.api)),
+                            );
+                          },
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                    child: Text(l10n.registerLink),
+                  ),
+                ],
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: _loading
+                        ? null
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => ForgotPasswordScreen(api: widget.api)),
+                            );
+                          },
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(l10n.forgotPasswordLink),
+                  ),
+                  TextButton(
+                    onPressed: _loading
+                        ? null
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => RegisterScreen(api: widget.api)),
+                            );
+                          },
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      l10n.registerLink,
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -307,28 +364,39 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 class _CaptchaImage extends StatelessWidget {
-  const _CaptchaImage({required this.loading, required this.bytes, required this.onTap});
+  const _CaptchaImage({
+    required this.loading,
+    required this.bytes,
+    required this.onTap,
+    this.height = 40,
+  });
 
   final bool loading;
   final Uint8List? bytes;
   final VoidCallback? onTap;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
       child: Container(
-        height: 40,
+        height: height,
         decoration: BoxDecoration(
           border: Border.all(color: AppColors.border),
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(8),
           color: Colors.white,
         ),
         alignment: Alignment.center,
         child: loading
-            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+            ? SizedBox(
+                width: height * 0.45,
+                height: height * 0.45,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              )
             : bytes == null
-                ? const Icon(Icons.refresh, size: 18, color: AppColors.textSecondary)
+                ? Icon(Icons.refresh, size: height * 0.45, color: AppColors.textSecondary)
                 : Image.memory(bytes!, fit: BoxFit.contain),
       ),
     );

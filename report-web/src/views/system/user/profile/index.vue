@@ -62,7 +62,7 @@
    </div>
 </template>
 
-<script setup name="Profile">
+<script setup name="AdminUserProfile">
 import { useI18n } from 'vue-i18n'
 import userAvatar from "./userAvatar"
 import userInfo from "./userInfo"

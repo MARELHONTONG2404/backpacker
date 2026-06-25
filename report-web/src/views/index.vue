@@ -245,6 +245,7 @@ const STATUS_LABELS = computed(() => ({
   PUBLISHED: t('dashboard.statusPublished'),
   TAKEN: t('dashboard.statusTaken'),
   IN_PROGRESS: t('dashboard.statusInProgress'),
+  SUBMITTED: t('dashboard.statusSubmitted'),
   COMPLETED: t('dashboard.statusCompleted'),
   CANCELLED: t('dashboard.statusCancelled')
 }))
@@ -662,6 +663,10 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 768px) {
+  .dashboard-container {
+    padding: 0 2px;
+  }
+
   .welcome-inner {
     flex-direction: column;
     align-items: flex-start;
@@ -669,6 +674,10 @@ onBeforeUnmount(() => {
 
   .welcome-meta {
     text-align: left;
+  }
+
+  .section-title {
+    font-size: 15px;
   }
 }
 </style>

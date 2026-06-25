@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../config/app_strings.dart';
+import '../l10n/l10n_extension.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
@@ -25,6 +25,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool _obscurePassword = true;
 
   Future<void> _submit() async {
+    final l10n = context.l10n;
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
@@ -34,16 +35,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         newPassword: _passwordController.text,
       );
       if (!mounted) return;
-      showAppMessage(context, 'Password berhasil diatur ulang. Silakan masuk.');
+      showAppMessage(context, l10n.passwordResetSuccess);
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => LoginScreen(api: widget.api, initialUsername: _usernameController.text.trim()),
         ),
       );
     } on ApiException catch (error) {
-      if (mounted) showAppMessage(context, error.message);
+      if (mounted) showLocalizedAppMessage(context, error.message);
     } catch (_) {
-      if (mounted) showAppMessage(context, 'Gagal terhubung ke server.');
+      if (mounted) showAppMessage(context, l10n.serverConnectFailed);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -59,11 +60,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return SystemAuthShell(
-      header: const SystemAuthHeader(
-        title: 'Lupa Password',
-        tagline: 'Backpacker',
-        description: 'Verifikasi dengan username dan nomor telepon yang terdaftar.',
+      header: SystemAuthHeader(
+        title: l10n.forgotPasswordTitle,
+        tagline: l10n.forgotPasswordTagline,
+        description: l10n.forgotPasswordDescription,
       ),
       child: Form(
         key: _formKey,
@@ -72,22 +74,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           children: [
             SystemAuthField(
               controller: _usernameController,
-              hint: AppStrings.username,
+              hint: l10n.username,
               prefixIcon: Icons.person_outline,
-              validator: (value) => value == null || value.trim().isEmpty ? 'Wajib diisi' : null,
+              validator: (value) => value == null || value.trim().isEmpty ? l10n.requiredField : null,
             ),
             const SizedBox(height: 18),
             SystemAuthField(
               controller: _phoneController,
-              hint: 'Nomor telepon terdaftar',
+              hint: l10n.registeredPhone,
               prefixIcon: Icons.phone_outlined,
               keyboardType: TextInputType.phone,
-              validator: (value) => value == null || value.trim().isEmpty ? 'Wajib diisi' : null,
+              validator: (value) => value == null || value.trim().isEmpty ? l10n.requiredField : null,
             ),
             const SizedBox(height: 18),
             SystemAuthField(
               controller: _passwordController,
-              hint: 'Password baru',
+              hint: l10n.newPassword,
               prefixIcon: Icons.lock_outline,
               obscureText: _obscurePassword,
               suffixIcon: IconButton(
@@ -100,7 +102,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   color: AppColors.textSecondary,
                 ),
               ),
-              validator: (value) => value == null || value.length < 5 ? 'Minimal 5 karakter' : null,
+              validator: (value) => value == null || value.length < 5 ? l10n.minChars5 : null,
             ),
             const SizedBox(height: 25),
             SizedBox(
@@ -115,7 +117,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 child: _loading
                     ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('Atur Ulang Password'),
+                    : Text(l10n.resetPassword),
               ),
             ),
             const SizedBox(height: 12),
@@ -123,7 +125,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: _loading ? null : () => Navigator.of(context).pop(),
-                child: const Text('Kembali ke login'),
+                child: Text(l10n.backToLogin),
               ),
             ),
           ],

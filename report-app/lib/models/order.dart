@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'backpacker_profile.dart';
 
 class OrderItem {
@@ -43,17 +44,25 @@ class OrderItem {
       return 0;
     }
 
+    int? readOptionalInt(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
+
     return OrderItem(
-      orderId: readInt(json['orderId']),
-      orderNo: json['orderNo'] as String? ?? '',
+      orderId: readInt(json['orderId'] ?? json['order_id']),
+      orderNo: json['orderNo'] as String? ?? json['order_no'] as String? ?? '',
       title: json['title'] as String? ?? '',
       status: json['status'] as String? ?? '',
-      rewardAmount: json['rewardAmount'] as num? ?? 0,
+      rewardAmount: json['rewardAmount'] as num? ?? json['reward_amount'] as num? ?? 0,
       description: json['description'] as String?,
       category: json['category'] as String?,
-      locationText: json['locationText'] as String?,
-      creatorId: json['creatorId'] == null ? null : readInt(json['creatorId']),
-      executorId: json['executorId'] == null ? null : readInt(json['executorId']),
+      locationText: json['locationText'] as String? ?? json['location_text'] as String?,
+      creatorId: readOptionalInt(json['creatorId'] ?? json['creator_id']),
+      executorId: readOptionalInt(json['executorId'] ?? json['executor_id']),
       creatorName: json['creatorName'] as String?,
       executorName: json['executorName'] as String?,
       cancelReason: json['cancelReason'] as String?,
@@ -71,49 +80,76 @@ class OrderItem {
 
   bool isExecutor(int? userId) => userId != null && executorId == userId;
 
-  String get statusLabel {
+  bool canChat(int? userId) =>
+      isParticipant(userId) &&
+      (status == 'TAKEN' || status == 'IN_PROGRESS' || status == 'SUBMITTED' || status == 'COMPLETED');
+
+  bool isParticipant(int? userId) =>
+      userId != null && (isCreator(userId) || isExecutor(userId));
+
+  String? chatUnavailableReason(AppLocalizations l10n) {
     switch (status) {
       case 'DRAFT':
-        return 'Draft';
+        return l10n.chatUnavailableDraft;
       case 'PUBLISHED':
-        return 'Dipublikasikan';
-      case 'TAKEN':
-        return 'Diambil';
-      case 'IN_PROGRESS':
-        return 'Dikerjakan';
-      case 'COMPLETED':
-        return 'Selesai';
+        return l10n.chatUnavailablePublished;
       case 'CANCELLED':
-        return 'Dibatalkan';
+        return l10n.chatUnavailableCancelled;
       case 'EXPIRED':
-        return 'Kedaluwarsa';
+        return l10n.chatUnavailableExpired;
+      default:
+        return null;
+    }
+  }
+
+  String statusLabel(AppLocalizations l10n) {
+    switch (status) {
+      case 'DRAFT':
+        return l10n.statusDraft;
+      case 'PUBLISHED':
+        return l10n.statusPublished;
+      case 'TAKEN':
+        return l10n.statusTaken;
+      case 'IN_PROGRESS':
+        return l10n.statusInProgress;
+      case 'SUBMITTED':
+        return l10n.statusSubmitted;
+      case 'COMPLETED':
+        return l10n.statusCompleted;
+      case 'CANCELLED':
+        return l10n.statusCancelled;
+      case 'EXPIRED':
+        return l10n.statusExpired;
       default:
         return status;
     }
   }
 
-  String get categoryLabel {
+  String categoryLabel(AppLocalizations l10n) {
     switch (category) {
       case 'delivery':
-        return 'Antar Barang';
+        return l10n.categoryDelivery;
       case 'helper':
-        return 'Bantuan';
+        return l10n.categoryHelper;
       case 'tech':
-        return 'Teknisi';
+        return l10n.categoryTech;
       case 'errands':
-        return 'Belanja / Errands';
+        return l10n.categoryErrands;
       default:
-        return 'Umum';
+        return l10n.categoryGeneral;
     }
   }
 
-  /// Aksi lifecycle sesuai status dan peran user (pembuat vs pelaksana).
-  List<OrderAction> availableActions(int? userId, {bool marketplace = false}) {
+  List<OrderAction> availableActions(
+    int? userId, {
+    bool marketplace = false,
+    bool myOrders = false,
+  }) {
     if (userId == null) return [];
 
     switch (status) {
       case 'DRAFT':
-        if (isCreator(userId)) {
+        if (isCreator(userId) || myOrders) {
           return [OrderAction.publish, OrderAction.cancel];
         }
         return [];
@@ -127,12 +163,17 @@ class OrderItem {
         return [];
       case 'TAKEN':
         if (isExecutor(userId)) {
-          return [OrderAction.start, OrderAction.abandon];
+          return [OrderAction.submit, OrderAction.abandon];
         }
         return [];
       case 'IN_PROGRESS':
         if (isExecutor(userId)) {
-          return [OrderAction.complete, OrderAction.abandon];
+          return [OrderAction.submit, OrderAction.abandon];
+        }
+        return [];
+      case 'SUBMITTED':
+        if (isCreator(userId)) {
+          return [OrderAction.confirm];
         }
         return [];
       default:
@@ -140,50 +181,75 @@ class OrderItem {
     }
   }
 
-  String roleLabel(int? userId) {
+  String roleLabel(AppLocalizations l10n, int? userId) {
     if (userId == null) return '';
-    if (isCreator(userId) && isExecutor(userId)) return 'Pembuat & Pelaksana';
-    if (isCreator(userId)) return 'Pembuat tugas';
-    if (isExecutor(userId)) return 'Pelaksana';
+    if (isCreator(userId) && isExecutor(userId)) return l10n.roleCreatorAndExecutor;
+    if (isCreator(userId)) return l10n.roleCreator;
+    if (isExecutor(userId)) return l10n.roleExecutor;
     return '';
   }
 }
 
 enum OrderAction {
-  publish('publish', 'Publish'),
-  cancel('cancel', 'Batalkan'),
-  take('take', 'Ambil Tugas'),
-  start('start', 'Mulai Kerjakan'),
-  complete('complete', 'Selesai'),
-  abandon('abandon', 'Lepas Tugas');
+  publish('publish'),
+  cancel('cancel'),
+  take('take'),
+  start('start'),
+  submit('submit'),
+  confirm('confirm'),
+  abandon('abandon');
 
-  const OrderAction(this.apiKey, this.label);
+  const OrderAction(this.apiKey);
 
   final String apiKey;
-  final String label;
 
-  String message(BackpackerProfile? profile) {
+  String label(AppLocalizations l10n) {
     switch (this) {
       case OrderAction.publish:
-        final fee = profile?.publishFee ?? 5;
-        return 'Publikasikan tugas ke marketplace? Biaya publikasi: $fee koin tembaga.';
+        return l10n.actionPublish;
       case OrderAction.cancel:
-        return 'Batalkan pesanan ini?';
+        return l10n.actionCancel;
       case OrderAction.take:
-        return 'Ambil tugas ini dan kerjakan sebagai pelaksana?';
+        return l10n.actionTake;
       case OrderAction.start:
-        return 'Mulai mengerjakan tugas ini?';
-      case OrderAction.complete:
-        final coins = profile?.taskRewardCoins ?? 3;
-        final rep = profile?.reputationTaskComplete ?? 5;
-        return 'Tandai tugas selesai? Anda mendapat +$coins koin dan +$rep reputasi.';
+        return l10n.actionStart;
+      case OrderAction.submit:
+        return l10n.actionSubmit;
+      case OrderAction.confirm:
+        return l10n.actionConfirm;
       case OrderAction.abandon:
-        return 'Lepas tugas ini? Reputasi Anda akan menurun.';
+        return l10n.actionAbandon;
+    }
+  }
+
+  String message(AppLocalizations l10n, BackpackerProfile? profile) {
+    switch (this) {
+      case OrderAction.publish:
+        return l10n.actionPublishMessage(profile?.publishFee ?? 5);
+      case OrderAction.cancel:
+        return l10n.actionCancelMessage;
+      case OrderAction.take:
+        return l10n.actionTakeMessage;
+      case OrderAction.start:
+        return l10n.actionStartMessage;
+      case OrderAction.submit:
+        return l10n.actionSubmitMessage;
+      case OrderAction.confirm:
+        return l10n.actionConfirmMessage(
+          profile?.taskRewardCoins ?? 3,
+          profile?.reputationTaskComplete ?? 5,
+        );
+      case OrderAction.abandon:
+        return l10n.actionAbandonMessage;
     }
   }
 
   bool get needsCancelReason => this == OrderAction.cancel || this == OrderAction.abandon;
 
   bool get isPrimary =>
-      this == OrderAction.take || this == OrderAction.start || this == OrderAction.complete;
+      this == OrderAction.publish ||
+      this == OrderAction.take ||
+      this == OrderAction.start ||
+      this == OrderAction.submit ||
+      this == OrderAction.confirm;
 }

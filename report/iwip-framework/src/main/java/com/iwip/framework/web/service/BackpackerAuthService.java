@@ -40,7 +40,6 @@ public class BackpackerAuthService
         String nickName = StringUtils.trim(body.getNickName());
         String phonenumber = StringUtils.trim(body.getPhonenumber());
 
-        loginService.validateCaptcha(username, body.getCode(), body.getUuid());
         validateRegisterInput(username, password);
 
         SysUser existing = new SysUser();

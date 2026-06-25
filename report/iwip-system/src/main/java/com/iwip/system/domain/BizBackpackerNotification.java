@@ -12,8 +12,11 @@ public class BizBackpackerNotification extends BaseEntity
     private static final long serialVersionUID = 1L;
 
     public static final String TYPE_ORDER_TAKEN = "ORDER_TAKEN";
+    public static final String TYPE_ORDER_SUBMITTED = "ORDER_SUBMITTED";
     public static final String TYPE_ORDER_COMPLETED = "ORDER_COMPLETED";
     public static final String TYPE_ORDER_RATED = "ORDER_RATED";
+    public static final String TYPE_ORDER_CANCELLED = "ORDER_CANCELLED";
+    public static final String TYPE_ORDER_EXPIRED = "ORDER_EXPIRED";
 
     private Long notificationId;
 

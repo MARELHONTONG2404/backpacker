@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n_extension.dart';
+import '../l10n/server_message_localizer.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_palette.dart';
+import 'app_animations.dart';
+import 'glass_surface.dart';
 
 class BrandHeader extends StatelessWidget {
   const BrandHeader({
     super.key,
-    this.subtitle = 'Marketplace jasa on-demand',
+    this.subtitle,
     this.compact = false,
   });
 
-  final String subtitle;
+  final String? subtitle;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       children: [
         Container(
@@ -42,7 +48,7 @@ class BrandHeader extends StatelessWidget {
         ),
         SizedBox(height: compact ? 12 : 20),
         Text(
-          'Backpacker',
+          l10n.appName,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
@@ -50,7 +56,7 @@ class BrandHeader extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          subtitle,
+          subtitle ?? l10n.appSubtitle,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
@@ -84,7 +90,7 @@ class AuthShell extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (showBrand) ...[
-                    const BrandHeader(),
+                    BrandHeader(),
                     const SizedBox(height: 28),
                   ],
                   Container(
@@ -153,20 +159,26 @@ class AppTextField extends StatelessWidget {
 }
 
 class LoadingView extends StatelessWidget {
-  const LoadingView({super.key, this.message = 'Memuat...'});
+  const LoadingView({super.key, required this.message});
 
   final String message;
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 16),
-          Text(message, style: const TextStyle(color: AppColors.textSecondary)),
-        ],
+      child: GlassSurface(
+        blur: false,
+        opacity: 0.92,
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const BrandedLoadingIndicator(),
+            const SizedBox(height: 18),
+            Text(message, style: TextStyle(color: palette.textSecondary)),
+          ],
+        ),
       ),
     );
   }
@@ -186,38 +198,54 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 80),
-                Icon(icon, size: 56, color: AppColors.textSecondary.withValues(alpha: 0.45)),
-                const SizedBox(height: 16),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      subtitle!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppColors.textSecondary),
+            child: EntranceFadeSlide(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 80),
+                  Container(
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 44,
+                      color: palette.textSecondary.withValues(alpha: 0.55),
                     ),
                   ),
+                  const SizedBox(height: 18),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        subtitle!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: palette.textSecondary, height: 1.4),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 80),
                 ],
-                const SizedBox(height: 80),
-              ],
+              ),
             ),
           ),
         );
@@ -234,7 +262,7 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = statusColor(status);
+    final color = statusColor(status, brightness: Theme.of(context).brightness);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -266,23 +294,39 @@ class SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
+    return GlassSurface(
+      blur: false,
+      opacity: 0.93,
+      elevation: 1,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 18,
+                decoration: BoxDecoration(
+                  gradient: AppColors.brandGradient,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
       ),
     );
   }
@@ -290,4 +334,245 @@ class SectionCard extends StatelessWidget {
 
 void showAppMessage(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+}
+
+void showLocalizedAppMessage(BuildContext context, String message) {
+  showAppMessage(context, localizeServerMessage(context.l10n, message));
+}
+
+Future<void> showAppInfoDialog(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required String actionLabel,
+}) async {
+  final palette = context.palette;
+  await showDialog<void>(
+    context: context,
+    barrierColor: Colors.black.withValues(alpha: 0.45),
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: palette.surfaceElevated,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppLayout.cardRadius),
+      ),
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: Text(actionLabel),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<bool> showAppConfirmDialog(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required String confirmLabel,
+  required String cancelLabel,
+}) async {
+  final palette = context.palette;
+  final result = await showDialog<bool>(
+    context: context,
+    barrierColor: Colors.black.withValues(alpha: 0.45),
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: palette.surfaceElevated,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppLayout.cardRadius),
+      ),
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: Text(cancelLabel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: Text(confirmLabel),
+        ),
+      ],
+    ),
+  );
+  return result ?? false;
+}
+
+Future<String?> showAppInputDialog(
+  BuildContext context, {
+  required String title,
+  String? hint,
+  String? warning,
+  required String confirmLabel,
+  required String cancelLabel,
+  int maxLines = 3,
+}) async {
+  final palette = context.palette;
+  final controller = TextEditingController();
+  final result = await showDialog<String>(
+    context: context,
+    barrierColor: Colors.black.withValues(alpha: 0.45),
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: palette.surfaceElevated,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppLayout.cardRadius),
+      ),
+      title: Text(title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (warning != null) ...[
+            Text(warning, style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 12),
+          ],
+          TextField(
+            controller: controller,
+            maxLines: maxLines,
+            decoration: InputDecoration(
+              labelText: hint,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: Text(cancelLabel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+          child: Text(confirmLabel),
+        ),
+      ],
+    ),
+  );
+  controller.dispose();
+  return result;
+}
+
+/// Pemberitahuan inline ringkas — menggantikan MaterialBanner yang mendorong layout.
+class InlineNotice extends StatelessWidget {
+  const InlineNotice({
+    super.key,
+    required this.message,
+    required this.icon,
+    this.color,
+    this.actionLabel,
+    this.onAction,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
+  });
+
+  final String message;
+  final IconData icon;
+  final Color? color;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = color ?? AppColors.primary;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppLayout.screenPadding,
+        AppLayout.sectionGap,
+        AppLayout.screenPadding,
+        0,
+      ),
+      child: GlassSurface(
+        blur: false,
+        opacity: 0.95,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        borderColor: tone.withValues(alpha: 0.25),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: tone, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(message, style: const TextStyle(fontSize: 13, height: 1.35)),
+            ),
+            if (actionLabel != null && onAction != null)
+              TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  foregroundColor: tone,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(actionLabel!),
+              ),
+            if (secondaryActionLabel != null && onSecondaryAction != null)
+              TextButton(
+                onPressed: onSecondaryAction,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(secondaryActionLabel!),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Filter kategori horizontal untuk tab marketplace.
+class CategoryFilterChips extends StatelessWidget {
+  const CategoryFilterChips({
+    super.key,
+    required this.selected,
+    required this.onSelected,
+    required this.options,
+  });
+
+  final String? selected;
+  final ValueChanged<String?> onSelected;
+  final List<({String? value, String label})> options;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppLayout.screenPadding),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: options.map((option) {
+          final isSelected = selected == option.value;
+          return FilterChip(
+            label: Text(option.label),
+            selected: isSelected,
+            showCheckmark: false,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(999),
+            ),
+            selectedColor: AppColors.primary.withValues(alpha: 0.14),
+            labelStyle: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected ? AppColors.primary : AppColors.textRegular,
+            ),
+            side: BorderSide(
+              color: isSelected ? AppColors.primary.withValues(alpha: 0.35) : AppColors.border,
+            ),
+            onSelected: (_) => onSelected(option.value),
+          );
+        }).toList(),
+      ),
+    );
+  }
 }

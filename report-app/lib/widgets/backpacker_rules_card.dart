@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../config/app_strings.dart';
+import '../l10n/l10n_extension.dart';
 import '../models/backpacker_profile.dart';
 import '../theme/app_theme.dart';
+import 'common_widgets.dart';
 
-/// Penjelasan singkat sistem koin & reputasi sesuai deskripsi pembimbing.
 class BackpackerRulesCard extends StatelessWidget {
   const BackpackerRulesCard({super.key, this.profile});
 
@@ -12,29 +12,23 @@ class BackpackerRulesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      color: AppColors.primary.withValues(alpha: 0.04),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-        leading: const Icon(Icons.info_outline, color: AppColors.primary),
-        title: Text(
-          AppStrings.rulesTitle,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        subtitle: profile == null
-            ? null
-            : Text(
-                AppStrings.reputationMinHint.replaceFirst('{min}', '${profile!.minReputationToTake}'),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-        children: const [
-          _RuleRow(icon: Icons.monetization_on_outlined, text: AppStrings.rulesCoins),
-          SizedBox(height: 8),
-          _RuleRow(icon: Icons.star_outline, text: AppStrings.rulesReputation),
-          SizedBox(height: 8),
-          _RuleRow(icon: Icons.block, text: AppStrings.rulesBlock),
+    final l10n = context.l10n;
+    return SectionCard(
+      title: l10n.rulesTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (profile != null)
+            Text(
+              l10n.reputationMinHint(profile!.minReputationToTake),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          if (profile != null) const SizedBox(height: 8),
+          _RuleRow(icon: Icons.monetization_on_outlined, text: l10n.rulesCoins),
+          const SizedBox(height: 8),
+          _RuleRow(icon: Icons.star_outline, text: l10n.rulesReputation),
+          const SizedBox(height: 8),
+          _RuleRow(icon: Icons.block, text: l10n.rulesBlock),
         ],
       ),
     );
@@ -53,8 +47,8 @@ class _RuleRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 18, color: AppColors.primary),
-        const SizedBox(width: 10),
-        Expanded(child: Text(text, style: const TextStyle(fontSize: 13, height: 1.45))),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 13, height: 1.4))),
       ],
     );
   }

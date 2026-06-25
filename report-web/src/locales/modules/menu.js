@@ -2,6 +2,7 @@ export default {
   index: 'Dasbor',
   lock: 'Kunci Layar',
   user: 'Profil Saya',
+  admin_profile: 'Profil Admin',
   system: 'Manajemen Sistem',
   system_user: 'User',
   system_role: 'Role',
@@ -29,5 +30,12 @@ export default {
   system_user_auth: 'Tetapkan Role',
   system_role_auth: 'Tetapkan User',
   system_dict_data: 'Data Kamus',
-  monitor_job_log: 'Log Penjadwalan'
+  monitor_job_log: 'Log Penjadwalan',
+  backpacker: 'Backpacker',
+  backpacker_order: 'Daftar Pesanan',
+  backpacker_users: 'Profil Backpacker',
+  backpacker_profile: 'Profil Backpacker',
+  backpacker_coin: 'Riwayat Koin',
+  backpacker_reputation: 'Log Reputasi',
+  backpacker_rating: 'Penilaian Tugas'
 }

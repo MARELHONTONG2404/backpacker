@@ -5,7 +5,7 @@
 -- ----------------------------
 
 insert into sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
-select 2205, 'Profil Backpacker', 2200, 2, 'profile', 'backpacker/profile/index', '', '', 1, 0, 'C', '0', '0', 'backpacker:profile:list', 'user', 'admin', sysdate(), 'Monitoring profil koin dan reputasi'
+select 2205, 'Profil Backpacker', 2200, 2, 'users', 'backpacker/profile/index', '', 'BackpackerProfile', 1, 0, 'C', '0', '0', 'backpacker:profile:list', 'user', 'admin', sysdate(), 'Monitoring profil koin dan reputasi'
 from dual where not exists (select 1 from sys_menu where menu_id = 2205);
 
 insert into sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)

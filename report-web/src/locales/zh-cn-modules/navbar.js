@@ -2,7 +2,7 @@ export default {
   themeMode: '主题模式',
   layoutSize: '布局大小',
   notifications: '消息通知',
-  profile: '个人中心',
+  profile: '管理员资料',
   layoutSettings: '布局设置',
   lockScreen: '锁定屏幕',
   logout: '退出登录',

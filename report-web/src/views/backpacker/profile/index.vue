@@ -1,25 +1,25 @@
 <template>
   <div class="app-container">
     <el-row :gutter="16" class="mb8">
-      <el-col :span="6">
+      <el-col :xs="12" :sm="6">
         <el-card shadow="never">
           <div class="stat-label">{{ t('backpacker.totalProfiles') }}</div>
           <div class="stat-value">{{ stats.totalProfiles ?? '-' }}</div>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="12" :sm="6">
         <el-card shadow="never">
           <div class="stat-label">{{ t('backpacker.totalCoins') }}</div>
           <div class="stat-value">{{ stats.totalCoins ?? '-' }}</div>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="12" :sm="6">
         <el-card shadow="never">
           <div class="stat-label">{{ t('backpacker.avgReputation') }}</div>
           <div class="stat-value">{{ stats.avgReputation ?? '-' }}</div>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="12" :sm="6">
         <el-card shadow="never">
           <div class="stat-label">{{ t('backpacker.lowReputation') }}</div>
           <div class="stat-value text-danger">{{ stats.lowReputation ?? '-' }}</div>

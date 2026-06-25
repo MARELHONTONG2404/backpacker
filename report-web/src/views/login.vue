@@ -25,19 +25,20 @@
           <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
         </el-input>
       </el-form-item>
-      <el-form-item prop="code" v-if="captchaEnabled">
-        <el-input
-          v-model="loginForm.code"
-          size="large"
-          auto-complete="off"
-          :placeholder="t('login.captcha')"
-          style="width: 63%"
-          @keyup.enter="handleLogin"
-        >
-          <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>
-        </el-input>
-        <div class="login-code">
-          <img :src="codeUrl" @click="getCode" class="login-code-img"/>
+      <el-form-item prop="code" v-if="captchaEnabled" class="login-captcha-item">
+        <div class="login-captcha-row">
+          <el-input
+            v-model="loginForm.code"
+            size="large"
+            auto-complete="off"
+            :placeholder="t('login.captcha')"
+            @keyup.enter="handleLogin"
+          >
+            <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>
+          </el-input>
+          <div class="login-code">
+            <img :src="codeUrl" @click="getCode" class="login-code-img"/>
+          </div>
         </div>
       </el-form-item>
       <el-checkbox v-model="loginForm.rememberMe" style="margin:0px 0px 25px 0px;">{{ t('login.remember') }}</el-checkbox>
@@ -79,8 +80,8 @@ const router = useRouter()
 const { proxy } = getCurrentInstance()
 
 const loginForm = ref({
-  username: "admin",
-  password: "admin123",
+  username: "",
+  password: "",
   rememberMe: false,
   code: "",
   uuid: ""
@@ -182,7 +183,7 @@ getCookie()
 .login-form {
   border-radius: 6px;
   background: #ffffff;
-  width: 400px;
+  width: min(400px, calc(100vw - 32px));
   padding: 25px 25px 5px 25px;
   z-index: 1;
   .el-input {
@@ -197,13 +198,27 @@ getCookie()
     margin-left: 0px;
   }
 }
+.login-captcha-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+
+  .el-input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 .login-code {
-  width: 33%;
+  flex-shrink: 0;
   height: 40px;
-  float: right;
+
   img {
     cursor: pointer;
     vertical-align: middle;
+    height: 40px;
+    border-radius: 4px;
   }
 }
 .el-login-footer {

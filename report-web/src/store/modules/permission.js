@@ -42,6 +42,9 @@ const usePermissionStore = defineStore(
             applyRouteTitleTranslations(sdata)
             applyRouteTitleTranslations(rdata)
             applyRouteTitleTranslations(defaultData)
+            normalizeBackpackerRouteNames(sdata)
+            normalizeBackpackerRouteNames(rdata)
+            normalizeBackpackerRouteNames(defaultData)
             const sidebarRoutes = filterAsyncRouter(sdata)
             const rewriteRoutes = filterAsyncRouter(rdata, false, true)
             const defaultRoutes = filterAsyncRouter(defaultData)
@@ -51,6 +54,21 @@ const usePermissionStore = defineStore(
             this.setSidebarRouters(constantRoutes.concat(sidebarRoutes))
             this.setDefaultRoutes(sidebarRoutes)
             this.setTopbarRoutes(defaultRoutes)
+            if (!router.hasRoute('NotFound')) {
+              router.addRoute({
+                path: '/:pathMatch(.*)*',
+                component: Layout,
+                hidden: true,
+                children: [
+                  {
+                    path: '',
+                    name: 'NotFound',
+                    component: () => import('@/views/error/404'),
+                    meta: { title: '404', titleKey: 'pages.page404Title' }
+                  }
+                ]
+              })
+            }
             resolve(rewriteRoutes)
           })
         })
@@ -60,6 +78,29 @@ const usePermissionStore = defineStore(
       }
     }
   })
+
+/** Pisahkan route name/path menu backpacker dari profil admin. */
+function normalizeBackpackerRouteNames(routes, parentPath = '') {
+  routes.forEach(route => {
+    const segment = String(route.path || '')
+    const fullPath = segment.startsWith('/')
+      ? segment
+      : `${parentPath}/${segment}`.replace(/\/+/g, '/')
+    const component = String(route.component || '')
+    const isBackpackerProfileMenu =
+      component.includes('backpacker/profile') ||
+      (fullPath.includes('/backpacker') && (segment === 'profile' || segment === 'users'))
+    if (isBackpackerProfileMenu) {
+      route.name = 'BackpackerProfile'
+    } else if (route.name === 'Profile') {
+      route.name = 'BackpackerProfile'
+    }
+    if (route.children && route.children.length) {
+      normalizeBackpackerRouteNames(route.children, fullPath)
+    }
+  })
+  return routes
+}
 
 // 遍历后台传来的路由字符串，转换为组件对象
 function filterAsyncRouter(asyncRouterMap, lastRouter = false, type = false) {

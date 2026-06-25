@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../config/app_strings.dart';
+import '../l10n/l10n_extension.dart';
 import '../models/backpacker_profile.dart';
 import '../models/order.dart';
 import '../services/api_service.dart';
@@ -8,6 +8,7 @@ import '../services/auth_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
 import '../widgets/order_action_handler.dart';
+import 'order_chat_screen.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   const OrderDetailScreen({
@@ -34,6 +35,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   int _ratingScore = 5;
   final _ratingCommentController = TextEditingController();
   bool _ratingLoading = false;
+  int _chatUnreadCount = 0;
 
   @override
   void initState() {
@@ -58,10 +60,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       );
       if (mounted) {
         setState(() => _order = updated);
-        showAppMessage(context, AppStrings.rateSubmitted);
+        showAppMessage(context, context.l10n.rateSubmitted);
       }
     } on ApiException catch (error) {
-      if (mounted) showAppMessage(context, error.message);
+      if (mounted) showLocalizedAppMessage(context, error.message);
     } finally {
       if (mounted) setState(() => _ratingLoading = false);
     }
@@ -71,35 +73,95 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     setState(() => _loading = true);
     try {
       _userId ??= await _storage.getUserId();
+      if (_userId == null) {
+        try {
+          final profile = await widget.api.fetchUserProfile();
+          _userId = profile.userId;
+        } catch (_) {}
+      }
       final order = await widget.api.fetchOrderDetail(widget.orderId);
       BackpackerProfile? profile;
       try {
         profile = await widget.api.fetchCoinProfile();
       } catch (_) {}
+      var chatUnread = 0;
+      if (order.canChat(_userId)) {
+        try {
+          chatUnread = await widget.api.fetchOrderChatUnreadCount(widget.orderId);
+        } catch (_) {}
+      }
       if (mounted) {
         setState(() {
           _order = order;
           _coinProfile = profile;
+          _chatUnreadCount = chatUnread;
         });
       }
     } on ApiException catch (error) {
-      if (mounted) showAppMessage(context, error.message);
+      if (mounted) showLocalizedAppMessage(context, error.message);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
+  Future<void> _openChat(OrderItem order) async {
+    if (_userId == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => OrderChatScreen(
+          api: widget.api,
+          order: order,
+          userId: _userId!,
+        ),
+      ),
+    );
+    if (mounted) _load();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final order = _order;
+    final showChat = order?.canChat(_userId) ?? false;
     return Scaffold(
-      appBar: AppBar(title: const Text('Detail Pesanan')),
+      appBar: AppBar(
+        title: Text(l10n.orderDetail),
+        actions: [
+          if (showChat)
+            IconButton(
+              tooltip: l10n.openChat,
+              onPressed: order == null ? null : () => _openChat(order),
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.chat_bubble_outline),
+                  if (_chatUnreadCount > 0)
+                    Positioned(
+                      right: -4,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.error,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '$_chatUnreadCount',
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
       body: _loading && order == null
-          ? const LoadingView(message: 'Memuat detail pesanan...')
+          ? LoadingView(message: l10n.loadingOrderDetail)
           : order == null
-              ? const EmptyState(
+              ? EmptyState(
                   icon: Icons.error_outline,
-                  title: 'Pesanan tidak ditemukan',
+                  title: l10n.orderNotFound,
                 )
               : RefreshIndicator(
                   onRefresh: _load,
@@ -110,32 +172,95 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       _StatusHeader(order: order),
                       const SizedBox(height: 12),
                       SectionCard(
-                        title: 'Informasi Tugas',
+                        title: l10n.taskInfo,
                         child: Column(
                           children: [
-                            _InfoTile(label: 'Nomor', value: order.orderNo),
-                            _InfoTile(label: 'Judul', value: order.title),
-                            _InfoTile(label: 'Kategori', value: order.categoryLabel),
-                            _InfoTile(label: 'Imbalan', value: 'Rp ${formatCurrency(order.rewardAmount)}'),
-                            _InfoTile(label: 'Lokasi', value: order.locationText?.isNotEmpty == true ? order.locationText! : '-'),
+                            _InfoTile(label: l10n.orderNumber, value: order.orderNo),
+                            _InfoTile(label: l10n.title, value: order.title),
+                            _InfoTile(label: l10n.category, value: order.categoryLabel(l10n)),
+                            _InfoTile(
+                              label: l10n.reward,
+                              value: l10n.rewardAmountValue(formatCurrency(order.rewardAmount)),
+                            ),
+                            _InfoTile(
+                              label: l10n.location,
+                              value: order.locationText?.isNotEmpty == true ? order.locationText! : '-',
+                            ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 12),
                       SectionCard(
-                        title: 'Pihak Terlibat',
+                        title: l10n.involvedParties,
                         child: Column(
                           children: [
-                            _InfoTile(label: 'Pembuat', value: order.creatorName ?? '-'),
-                            _InfoTile(label: 'Pelaksana', value: order.executorName ?? 'Belum ada'),
-                            if (order.roleLabel(_userId).isNotEmpty)
-                              _InfoTile(label: 'Peran Anda', value: order.roleLabel(_userId)),
+                            _InfoTile(label: l10n.creator, value: order.creatorName ?? '-'),
+                            _InfoTile(label: l10n.executor, value: order.executorName ?? l10n.noExecutorYet),
+                            if (order.roleLabel(l10n, _userId).isNotEmpty)
+                              _InfoTile(label: l10n.yourRole, value: order.roleLabel(l10n, _userId)),
                           ],
                         ),
                       ),
+                      if (order.isParticipant(_userId)) ...[
+                        const SizedBox(height: 12),
+                        SectionCard(
+                          title: l10n.chatSectionTitle,
+                          child: order.canChat(_userId)
+                              ? SizedBox(
+                                  width: double.infinity,
+                                  child: FilledButton(
+                                    onPressed: _userId == null ? null : () => _openChat(order),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.chat_bubble_outline),
+                                        const SizedBox(width: 8),
+                                        Flexible(
+                                          child: Text(
+                                            l10n.openChat,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        if (_chatUnreadCount > 0) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withValues(alpha: 0.22),
+                                              borderRadius: BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              '$_chatUnreadCount',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(Icons.info_outline, size: 20, color: AppColors.textSecondary),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        order.chatUnavailableReason(l10n) ?? l10n.chatUnavailablePublished,
+                                        style: const TextStyle(height: 1.4, color: AppColors.textSecondary),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       SectionCard(
-                        title: 'Deskripsi',
+                        title: l10n.description,
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
@@ -147,7 +272,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       if (order.cancelReason?.isNotEmpty == true) ...[
                         const SizedBox(height: 12),
                         SectionCard(
-                          title: 'Alasan Batal',
+                          title: l10n.cancelReason,
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: Text(order.cancelReason!),
@@ -157,7 +282,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       if (order.isRated) ...[
                         const SizedBox(height: 12),
                         SectionCard(
-                          title: AppStrings.ratingLabel,
+                          title: l10n.ratingLabel,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -180,7 +305,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       if (order.canRate(_userId)) ...[
                         const SizedBox(height: 12),
                         SectionCard(
-                          title: AppStrings.rateTask,
+                          title: l10n.rateTask,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -201,9 +326,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               TextField(
                                 controller: _ratingCommentController,
                                 maxLines: 2,
-                                decoration: const InputDecoration(
-                                  labelText: 'Komentar (opsional)',
-                                  border: OutlineInputBorder(),
+                                decoration: InputDecoration(
+                                  labelText: l10n.commentOptional,
+                                  border: const OutlineInputBorder(),
                                 ),
                               ),
                               const SizedBox(height: 12),
@@ -215,7 +340,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                         width: 20,
                                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                       )
-                                    : const Text('Kirim Penilaian'),
+                                    : Text(l10n.submitRating),
                               ),
                             ],
                           ),
@@ -227,6 +352,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         api: widget.api,
                         userId: _userId,
                         profile: _coinProfile,
+                        myOrders: true,
+                        fullWidth: true,
                         onChanged: _load,
                       ),
                       const SizedBox(height: 24),
@@ -244,7 +371,8 @@ class _StatusHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = statusColor(order.status);
+    final l10n = context.l10n;
+    final color = statusColor(order.status, brightness: Theme.of(context).brightness);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -281,7 +409,7 @@ class _StatusHeader extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 6),
-                StatusBadge(label: order.statusLabel, status: order.status),
+                StatusBadge(label: order.statusLabel(l10n), status: order.status),
               ],
             ),
           ),

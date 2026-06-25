@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iwip.system.mapper.BizBackpackerChatMessageMapper">
+
+    <resultMap id="BizBackpackerChatMessageResult" type="BizBackpackerChatMessage">
+        <id property="messageId" column="message_id"/>
+        <result property="orderId" column="order_id"/>
+        <result property="senderId" column="sender_id"/>
+        <result property="senderName" column="sender_name"/>
+        <result property="content" column="content"/>
+        <result property="messageType" column="message_type"/>
+        <result property="imageUrl" column="image_url"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="selectMessageColumns">
+        message_id, order_id, sender_id, sender_name, content, message_type, image_url, create_time
+    </sql>
+
+    <insert id="insertMessage" parameterType="BizBackpackerChatMessage" useGeneratedKeys="true" keyProperty="messageId">
+        insert into biz_backpacker_chat_message (order_id, sender_id, sender_name, content, message_type, image_url, create_time)
+        values (#{orderId}, #{senderId}, #{senderName}, #{content}, #{messageType}, #{imageUrl}, #{createTime})
+    </insert>
+
+    <select id="selectMessages" resultMap="BizBackpackerChatMessageResult">
+        <choose>
+            <when test="sinceId != null">
+                select <include refid="selectMessageColumns"/>
+                from biz_backpacker_chat_message
+                where order_id = #{orderId}
+                  and message_id &gt; #{sinceId}
+                order by create_time asc, message_id asc
+                limit #{limit}
+            </when>
+            <otherwise>
+                select <include refid="selectMessageColumns"/>
+                from (
+                    select <include refid="selectMessageColumns"/>
+                    from biz_backpacker_chat_message
+                    where order_id = #{orderId}
+                    order by create_time desc, message_id desc
+                    limit #{limit}
+                ) recent_messages
+                order by create_time asc, message_id asc
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectAllForOrder" resultMap="BizBackpackerChatMessageResult">
+        select <include refid="selectMessageColumns"/>
+        from biz_backpacker_chat_message
+        where order_id = #{orderId}
+        order by create_time asc, message_id asc
+        limit #{limit}
+    </select>
+</mapper>

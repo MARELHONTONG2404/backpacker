@@ -13,6 +13,7 @@ import components from './modules/components'
 import crontab from './modules/crontab'
 import tool from './modules/tool'
 import backpacker from './modules/backpacker'
+import dict from './modules/dict'
 
 export default {
   common,
@@ -29,5 +30,6 @@ export default {
   components,
   crontab,
   tool,
-  backpacker
+  backpacker,
+  dict
 }

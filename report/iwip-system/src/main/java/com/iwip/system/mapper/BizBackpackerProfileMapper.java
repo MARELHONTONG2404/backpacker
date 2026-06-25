@@ -24,6 +24,8 @@ public interface BizBackpackerProfileMapper
 
     int insertCoinTransaction(BizCoinTransaction transaction);
 
+    int countCoinTransactionByRefAndType(@Param("refId") Long refId, @Param("txType") String txType);
+
     List<BizCoinTransaction> selectRecentTransactions(@Param("userId") Long userId, @Param("limit") int limit);
 
     int adjustReputationScore(@Param("userId") Long userId, @Param("delta") int delta);

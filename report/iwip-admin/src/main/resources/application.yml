@@ -1,7 +1,7 @@
 # 项目相关配置
 iwip:
   # 文件路径 示例（ Windows配置D:/iwip/uploadPath，Linux配置 /home/iwip/uploadPath）
-  profile: /home/nitro/iwip/uploadPath
+  profile: ${IWIP_UPLOAD_PATH:/home/nitro/iwip/uploadPath}
   # 获取ip地址开关
   addressEnabled: false
   # 验证码类型 math 数字计算 char 字符验证
@@ -44,7 +44,7 @@ spring:
     # 国际化资源文件路径
     basename: i18n/messages
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   # 文件上传
   servlet:
     multipart:
@@ -63,8 +63,8 @@ spring:
 token:
   # 令牌自定义标识
   header: access_token
-  # 令牌密钥
-  secret: uLXLQOGt1jzDUSox7w==xqlR4Ek4Y2iHyaW/1CDQX0Rm2i5U5Ul
+  # 令牌密钥 — set JWT_SECRET env var in production
+  secret: ${JWT_SECRET:uLXLQOGt1jzDUSox7w==xqlR4Ek4Y2iHyaW/1CDQX0Rm2i5U5Ul}
   # 令牌有效期（默认30分钟）
   expireTime: 30
 

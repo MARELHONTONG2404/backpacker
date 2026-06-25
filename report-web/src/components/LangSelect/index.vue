@@ -35,8 +35,13 @@ function handleSetLanguage(lang) {
 .lang-select {
   display: flex;
   align-items: center;
+  justify-content: center;
   height: 100%;
+  min-width: 36px;
+  min-height: 36px;
   font-size: 18px;
   padding: 0 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 </style>

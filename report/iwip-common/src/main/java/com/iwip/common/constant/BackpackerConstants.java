@@ -16,7 +16,7 @@ public final class BackpackerConstants
     public static final int PUBLISH_FEE_COINS = 5;
 
     /** Reward check-in harian. */
-    public static final int DAILY_CHECKIN_COINS = 2;
+    public static final int DAILY_CHECKIN_COINS = 5;
 
     /** Reward menyelesaikan tugas. */
     public static final int TASK_REWARD_COINS = 3;
@@ -47,6 +47,7 @@ public final class BackpackerConstants
     public static final String TX_REGISTER_BONUS = "REGISTER_BONUS";
     public static final String TX_DAILY_CHECKIN = "DAILY_CHECKIN";
     public static final String TX_PUBLISH_FEE = "PUBLISH_FEE";
+    public static final String TX_PUBLISH_FEE_REFUND = "PUBLISH_FEE_REFUND";
     public static final String TX_TASK_REWARD = "TASK_REWARD";
     public static final String TX_ADMIN_ADJUST = "ADMIN_ADJUST";
 

@@ -99,6 +99,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         limit #{limit}
     </select>
 
+    <select id="countCoinTransactionByRefAndType" resultType="int">
+        select count(*)
+        from biz_coin_transaction
+        where ref_id = #{refId}
+          and tx_type = #{txType}
+    </select>
+
     <update id="adjustReputationScore">
         update biz_backpacker_profile
         set reputation_score = least(200, greatest(0, reputation_score + #{delta})),

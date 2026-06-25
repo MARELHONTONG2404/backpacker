@@ -103,6 +103,26 @@ public class BackpackerCoinServiceImpl implements IBackpackerCoinService
     }
 
     @Override
+    @Transactional
+    public void refundPublishFee(Long userId, Long orderId, String remark)
+    {
+        if (profileMapper.countCoinTransactionByRefAndType(orderId,
+                BackpackerConstants.TX_PUBLISH_FEE_REFUND) > 0)
+        {
+            return;
+        }
+        if (profileMapper.countCoinTransactionByRefAndType(orderId,
+                BackpackerConstants.TX_PUBLISH_FEE) <= 0)
+        {
+            return;
+        }
+
+        int fee = BackpackerConstants.PUBLISH_FEE_COINS;
+        getOrCreateProfile(userId);
+        creditCoins(userId, fee, BackpackerConstants.TX_PUBLISH_FEE_REFUND, orderId, remark);
+    }
+
+    @Override
     public List<BizCoinTransaction> getRecentTransactions(Long userId, int limit)
     {
         getOrCreateProfile(userId);

@@ -58,26 +58,24 @@ class AuthStorage {
   Future<void> saveRememberMe({
     required bool rememberMe,
     required String username,
-    required String password,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_rememberMeKey, rememberMe);
     if (rememberMe) {
       await prefs.setString(_rememberUsernameKey, username);
-      await prefs.setString(_rememberPasswordKey, password);
     } else {
       await prefs.remove(_rememberUsernameKey);
-      await prefs.remove(_rememberPasswordKey);
     }
+    await prefs.remove(_rememberPasswordKey);
   }
 
-  Future<({bool rememberMe, String username, String password})> loadRememberMe() async {
+  Future<({bool rememberMe, String username})> loadRememberMe() async {
     final prefs = await SharedPreferences.getInstance();
     final rememberMe = prefs.getBool(_rememberMeKey) ?? false;
+    await prefs.remove(_rememberPasswordKey);
     return (
       rememberMe: rememberMe,
       username: prefs.getString(_rememberUsernameKey) ?? '',
-      password: prefs.getString(_rememberPasswordKey) ?? '',
     );
   }
 }

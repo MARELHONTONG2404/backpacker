@@ -1,62 +1,132 @@
 import 'package:flutter/material.dart';
 
-import '../config/app_strings.dart';
+import '../l10n/l10n_extension.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_theme.dart';
+import 'app_animations.dart';
 import 'auth_background.dart';
+import 'backpacker_brand.dart';
+import 'glass_surface.dart';
+import 'language_selector.dart';
+import 'login_task_worker_animation.dart';
+import 'theme_selector.dart';
 
 /// Layout auth selaras konsep sistem Backpacker.
-class SystemAuthShell extends StatelessWidget {
+class SystemAuthShell extends StatefulWidget {
   const SystemAuthShell({
     super.key,
     required this.header,
     required this.child,
     this.showFooter = true,
+    this.showTaskWorkerAnimation = false,
   });
 
   final Widget header;
   final Widget child;
   final bool showFooter;
+  final bool showTaskWorkerAnimation;
+
+  @override
+  State<SystemAuthShell> createState() => _SystemAuthShellState();
+}
+
+class _SystemAuthShellState extends State<SystemAuthShell> {
+  static bool _isPhone(BuildContext context) => MediaQuery.sizeOf(context).width <= 480;
 
   @override
   Widget build(BuildContext context) {
-    final cardWidth =
-        MediaQuery.sizeOf(context).width > 448 ? 400.0 : MediaQuery.sizeOf(context).width - 48;
+    final size = MediaQuery.sizeOf(context);
+    final isPhone = _isPhone(context);
+    final cardWidth = isPhone
+        ? size.width - 32
+        : (size.width > 448 ? 400.0 : size.width - 48);
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Stack(
         fit: StackFit.expand,
         children: [
           const AuthBackground(),
-          Container(color: Colors.black.withValues(alpha: 0.18)),
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-              child: Container(
-                width: cardWidth,
-                padding: const EdgeInsets.fromLTRB(25, 28, 25, 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: EdgeInsets.only(top: isPhone ? 4 : 8, right: isPhone ? 4 : 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    header,
-                    const SizedBox(height: 24),
-                    child,
+                    ThemeMenuButton(iconColor: Colors.white),
+                    LanguageMenuButton(iconColor: Colors.white),
                   ],
                 ),
               ),
             ),
           ),
-          if (showFooter)
+          if (widget.showTaskWorkerAnimation)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: widget.showFooter ? 40 : 0,
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.92,
+                  child: LoginTaskWorkerAnimation(
+                    height: size.height < 640 ? 150 : 190,
+                  ),
+                ),
+              ),
+            ),
+          Align(
+            alignment: isPhone ? Alignment.topCenter : Alignment.center,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                isPhone ? 16 : 24,
+                isPhone ? 52 : 32,
+                isPhone ? 16 : 24,
+                isPhone ? 24 : 32,
+              ),
+              child: EntranceFadeSlide(
+                duration: const Duration(milliseconds: 520),
+                offsetY: 24,
+                child: GlassSurface(
+                  blur: true,
+                  opacity: 0.92,
+                  borderRadius: isPhone ? 16 : 20,
+                  elevation: 2,
+                  padding: EdgeInsets.fromLTRB(
+                    isPhone ? 20 : 25,
+                    isPhone ? 22 : 28,
+                    isPhone ? 20 : 25,
+                    isPhone ? 16 : 8,
+                  ),
+                  child: SizedBox(
+                    width: cardWidth,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        widget.header,
+                        SizedBox(height: isPhone ? 18 : 24),
+                        widget.child,
+                        if (isPhone && widget.showFooter) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            context.l10n.footer,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.textSecondary.withValues(alpha: 0.85),
+                              fontSize: 11,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (widget.showFooter && !isPhone)
             Positioned(
               left: 0,
               right: 0,
@@ -64,10 +134,10 @@ class SystemAuthShell extends StatelessWidget {
               child: Container(
                 height: 40,
                 alignment: Alignment.center,
-                child: const Text(
-                  AppStrings.footer,
+                child: Text(
+                  context.l10n.footer,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
                     letterSpacing: 1,
@@ -88,75 +158,48 @@ class SystemAuthHeader extends StatelessWidget {
     required this.title,
     required this.tagline,
     this.description,
+    this.compact = false,
   });
 
   final String title;
   final String tagline;
   final String? description;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isPhone = MediaQuery.sizeOf(context).width <= 480;
+    final useCompact = compact || isPhone;
+
     return Column(
       children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, AppColors.primaryDark],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.35),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: const Icon(Icons.backpack_outlined, color: Colors.white, size: 32),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.2,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          tagline,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppColors.primary,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
+        BackpackerBrandTitle(
+          compact: useCompact,
+          showLogo: true,
+          showSubtitle: !useCompact,
+          logoSize: useCompact ? 44 : null,
         ),
         if (description != null) ...[
-          const SizedBox(height: 10),
+          SizedBox(height: useCompact ? 8 : 10),
           Text(
             description!,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 12,
+            maxLines: useCompact ? 2 : null,
+            overflow: useCompact ? TextOverflow.ellipsis : null,
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: useCompact ? 13 : 12,
               height: 1.45,
             ),
           ),
         ],
-        const SizedBox(height: 8),
+        SizedBox(height: useCompact ? 6 : 8),
         Container(
           height: 3,
-          width: 48,
+          width: useCompact ? 40 : 48,
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.85),
+            gradient: AppColors.brandGradient,
             borderRadius: BorderRadius.circular(99),
           ),
         ),
@@ -189,23 +232,82 @@ class SystemAuthField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isPhone = MediaQuery.sizeOf(context).width <= 480;
+    final fieldHeight = isPhone ? 48.0 : 40.0;
+    final fontSize = isPhone ? 16.0 : 14.0;
+    final iconSize = isPhone ? 20.0 : 16.0;
+
     return SizedBox(
-      height: 40,
+      height: fieldHeight,
       child: TextFormField(
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
         validator: validator,
         onFieldSubmitted: onFieldSubmitted,
-        style: const TextStyle(fontSize: 14),
+        textInputAction: onFieldSubmitted != null ? TextInputAction.done : TextInputAction.next,
+        style: TextStyle(fontSize: fontSize, color: palette.textPrimary),
         decoration: InputDecoration(
           hintText: hint,
+          hintStyle: TextStyle(fontSize: fontSize, color: palette.textSecondary),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: isPhone ? 14 : 12,
+            vertical: isPhone ? 14 : 10,
+          ),
           prefixIcon: prefixIcon == null
               ? null
-              : Icon(prefixIcon, size: 16, color: AppColors.textSecondary),
+              : Icon(prefixIcon, size: iconSize, color: palette.textSecondary),
           suffixIcon: suffixIcon,
-          isDense: true,
+          isDense: !isPhone,
         ),
+      ),
+    );
+  }
+}
+
+/// Tombol submit standar halaman auth — ukuran sentuh nyaman di smartphone.
+class SystemAuthSubmitButton extends StatelessWidget {
+  const SystemAuthSubmitButton({
+    super.key,
+    required this.onPressed,
+    required this.label,
+    this.loading = false,
+  });
+
+  final VoidCallback? onPressed;
+  final String label;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPhone = MediaQuery.sizeOf(context).width <= 480;
+    final height = isPhone ? 48.0 : 40.0;
+
+    return SizedBox(
+      height: height,
+      child: ElevatedButton(
+        onPressed: loading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(isPhone ? 8 : 4),
+          ),
+          textStyle: TextStyle(
+            fontSize: isPhone ? 16 : 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        child: loading
+            ? SizedBox(
+                width: isPhone ? 22 : 18,
+                height: isPhone ? 22 : 18,
+                child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : Text(label),
       ),
     );
   }

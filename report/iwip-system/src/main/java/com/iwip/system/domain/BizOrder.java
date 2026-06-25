@@ -20,6 +20,8 @@ public class BizOrder extends BaseEntity
     public static final String STATUS_PUBLISHED = "PUBLISHED";
     public static final String STATUS_TAKEN = "TAKEN";
     public static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
+    /** Pelaksana mengajukan selesai; menunggu konfirmasi pembuat tugas. */
+    public static final String STATUS_SUBMITTED = "SUBMITTED";
     public static final String STATUS_COMPLETED = "COMPLETED";
     public static final String STATUS_CANCELLED = "CANCELLED";
     public static final String STATUS_EXPIRED = "EXPIRED";
